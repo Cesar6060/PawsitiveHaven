@@ -1,0 +1,6 @@
+@PawsitiveHaven.Api_HostAddress = http://localhost:5071
+
+GET {{PawsitiveHaven.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

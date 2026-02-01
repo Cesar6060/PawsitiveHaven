@@ -1,0 +1,49 @@
+@inherits LayoutComponentBase
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
+
+<div class="d-flex flex-column min-vh-100">
+    @if (AuthState.IsAuthenticated)
+    {
+        <!-- Desktop Sidebar -->
+        <div class="d-none d-md-flex">
+            <NavMenu />
+            <main class="flex-grow-1 p-4" style="margin-left: 250px;">
+                @Body
+            </main>
+        </div>
+
+        <!-- Mobile Layout -->
+        <div class="d-md-none d-flex flex-column min-vh-100">
+            <main class="flex-grow-1 p-3 pb-5 mb-5">
+                @Body
+            </main>
+            <BottomNav />
+        </div>
+    }
+    else
+    {
+        <!-- Unauthenticated Layout -->
+        <main class="flex-grow-1">
+            @Body
+        </main>
+    }
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">X</span>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= StateHasChanged;
+    }
+}

@@ -1,0 +1,26 @@
+@inject NavigationManager Navigation
+
+<nav class="navbar fixed-bottom navbar-dark bg-dark border-top border-secondary">
+    <div class="container-fluid d-flex justify-content-around">
+        <NavLink class="nav-link text-center text-white px-3" href="dashboard" Match="NavLinkMatch.All">
+            <i class="bi bi-house-door fs-4 d-block"></i>
+            <small>Home</small>
+        </NavLink>
+        <NavLink class="nav-link text-center text-white px-3" href="profile">
+            <i class="bi bi-person-badge fs-4 d-block"></i>
+            <small>Pets</small>
+        </NavLink>
+        <NavLink class="nav-link text-center text-white px-3" href="checklist">
+            <i class="bi bi-check2-square fs-4 d-block"></i>
+            <small>Tasks</small>
+        </NavLink>
+        <NavLink class="nav-link text-center text-white px-3" href="chat">
+            <i class="bi bi-chat-dots fs-4 d-block"></i>
+            <small>Chat</small>
+        </NavLink>
+        <NavLink class="nav-link text-center text-white px-3" href="settings">
+            <i class="bi bi-gear fs-4 d-block"></i>
+            <small>More</small>
+        </NavLink>
+    </div>
+</nav>

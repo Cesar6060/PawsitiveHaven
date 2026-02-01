@@ -1,0 +1,37 @@
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.nupkg
+
+# IDE
+.vs/
+.vscode/
+*.swp
+.idea/
+
+# Environment
+.env
+*.local
+
+# Build
+publish/
+out/
+
+# Docker
+postgres_data/
+
+# macOS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Test results
+TestResults/
+coverage/

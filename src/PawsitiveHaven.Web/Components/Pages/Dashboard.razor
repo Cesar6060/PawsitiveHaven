@@ -1,0 +1,239 @@
+@page "/dashboard"
+@inject AuthStateService AuthState
+@inject PetService PetSvc
+@inject AppointmentService AppointmentSvc
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard - Pawsitive Haven</PageTitle>
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="text-center py-5">
+        <p>Please log in to view your dashboard.</p>
+        <a href="/login" class="btn btn-primary">Login</a>
+    </div>
+}
+else
+{
+    <div class="container-fluid">
+        <h1 class="mb-4">Welcome, @AuthState.Username!</h1>
+
+        <!-- Pet Carousel Section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-heart-fill text-danger me-2"></i>My Pets
+                </h5>
+                <a href="/profile" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> Add Pet
+                </a>
+            </div>
+            <div class="card-body">
+                @if (isLoadingPets)
+                {
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                }
+                else if (pets.Count == 0)
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-emoji-frown fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted">No pets yet. Add your first pet!</p>
+                        <a href="/profile" class="btn btn-primary">Add Pet</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                        @foreach (var pet in pets)
+                        {
+                            <div class="col">
+                                <div class="card h-100 pet-card" @onclick="() => NavigateToPet(pet.Id)">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="pet-avatar me-3">
+                                                @if (pet.Species?.ToLower() == "dog")
+                                                {
+                                                    <i class="bi bi-emoji-smile fs-2 text-warning"></i>
+                                                }
+                                                else if (pet.Species?.ToLower() == "cat")
+                                                {
+                                                    <i class="bi bi-emoji-heart-eyes fs-2 text-info"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-heart fs-2 text-danger"></i>
+                                                }
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">@pet.Name</h6>
+                                                <small class="text-muted">@pet.Species @(pet.Breed != null ? $"- {pet.Breed}" : "")</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Upcoming Tasks Section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-check me-2"></i>Upcoming Tasks
+                </h5>
+                <a href="/checklist" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                @if (isLoadingAppointments)
+                {
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                }
+                else if (upcomingAppointments.Count == 0)
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted">No upcoming tasks</p>
+                    </div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var apt in upcomingAppointments.Take(5))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@apt.Title</strong>
+                                    @if (!string.IsNullOrEmpty(apt.PetName))
+                                    {
+                                        <span class="badge bg-secondary ms-2">@apt.PetName</span>
+                                    }
+                                    <br />
+                                    <small class="text-muted">
+                                        @apt.AppointmentDate.ToString("MMM dd, yyyy")
+                                        @if (apt.AppointmentTime.HasValue)
+                                        {
+                                            <text> at @apt.AppointmentTime.Value.ToString("hh:mm tt")</text>
+                                        }
+                                    </small>
+                                </div>
+                                <span class="badge @(apt.IsCompleted ? "bg-success" : "bg-warning")">
+                                    @(apt.IsCompleted ? "Done" : "Pending")
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <a href="/chat" class="card text-decoration-none h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-chat-dots fs-1 text-primary"></i>
+                        <p class="mt-2 mb-0">AI Chat</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/faq" class="card text-decoration-none h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-question-circle fs-1 text-success"></i>
+                        <p class="mt-2 mb-0">FAQ</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/resources" class="card text-decoration-none h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-book fs-1 text-info"></i>
+                        <p class="mt-2 mb-0">Resources</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/settings" class="card text-decoration-none h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-gear fs-1 text-secondary"></i>
+                        <p class="mt-2 mb-0">Settings</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .pet-card {
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .pet-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+@code {
+    private List<PawsitiveHaven.Web.Models.PetDto> pets = new();
+    private List<PawsitiveHaven.Web.Models.AppointmentDto> upcomingAppointments = new();
+    private bool isLoadingPets = true;
+    private bool isLoadingAppointments = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var petsTask = LoadPetsAsync();
+        var appointmentsTask = LoadAppointmentsAsync();
+
+        await Task.WhenAll(petsTask, appointmentsTask);
+    }
+
+    private async Task LoadPetsAsync()
+    {
+        try
+        {
+            pets = await PetSvc.GetPetsAsync();
+        }
+        finally
+        {
+            isLoadingPets = false;
+        }
+    }
+
+    private async Task LoadAppointmentsAsync()
+    {
+        try
+        {
+            upcomingAppointments = await AppointmentSvc.GetUpcomingAppointmentsAsync(7);
+        }
+        finally
+        {
+            isLoadingAppointments = false;
+        }
+    }
+
+    private void NavigateToPet(int petId)
+    {
+        Navigation.NavigateTo($"/profile/{petId}");
+    }
+}

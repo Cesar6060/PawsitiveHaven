@@ -1,0 +1,84 @@
+@inject AuthStateService AuthState
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+<nav class="sidebar bg-dark text-white d-flex flex-column" style="width: 250px; position: fixed; height: 100vh;">
+    <div class="p-3 border-bottom border-secondary">
+        <h4 class="mb-0">
+            <i class="bi bi-heart-pulse-fill text-danger"></i>
+            Pawsitive Haven
+        </h4>
+    </div>
+
+    <div class="flex-grow-1 py-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="dashboard" Match="NavLinkMatch.All">
+                    <i class="bi bi-house-door me-2"></i> Dashboard
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="profile">
+                    <i class="bi bi-person-badge me-2"></i> Pet Profiles
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="checklist">
+                    <i class="bi bi-check2-square me-2"></i> Checklist
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="chat">
+                    <i class="bi bi-chat-dots me-2"></i> AI Chat
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="faq">
+                    <i class="bi bi-question-circle me-2"></i> FAQ
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="resources">
+                    <i class="bi bi-book me-2"></i> Resources
+                </NavLink>
+            </li>
+
+            @if (AuthState.IsAdmin)
+            {
+                <li class="nav-item mt-3">
+                    <span class="nav-link text-muted small">ADMIN</span>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link text-white" href="admin/users">
+                        <i class="bi bi-people me-2"></i> Users
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link text-white" href="admin/faqs">
+                        <i class="bi bi-question-square me-2"></i> FAQ Management
+                    </NavLink>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="p-3 border-top border-secondary">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <small class="text-muted">Logged in as</small>
+                <div class="fw-bold">@AuthState.Username</div>
+            </div>
+            <button class="btn btn-outline-light btn-sm" @onclick="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+@code {
+    private void Logout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

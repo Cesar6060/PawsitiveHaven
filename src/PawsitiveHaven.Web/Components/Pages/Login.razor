@@ -2,6 +2,7 @@
 @inject AuthService Auth
 @inject AuthStateService AuthState
 @inject NavigationManager Navigation
+@inject ILogger<Login> Logger
 
 <PageTitle>Login - Pawsitive Haven</PageTitle>
 
@@ -90,6 +91,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Login failed for user {Username}", loginModel.Username);
             errorMessage = "An error occurred. Please try again.";
         }
         finally

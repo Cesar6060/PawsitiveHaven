@@ -351,11 +351,7 @@ After running `init.sql`, these accounts are available:
 
 ## Known Issues / Technical Debt
 
-1. **Warnings to address:**
-   - Unused `ex` variable in Login.razor and Register.razor
-   - Unawaited async call in Chat.razor line 162
-
-2. **Improvements needed:**
+1. **Improvements needed:**
    - Add comprehensive unit tests
    - Add integration tests
    - Implement request/response logging
@@ -430,8 +426,6 @@ All 6 phases are COMPLETE and merged to main:
 - Greptile reviews all PRs - address feedback before merging
 
 ## Known Technical Debt
-- Unused `ex` variable in Login.razor and Register.razor (warnings)
-- Unawaited async call in Chat.razor line 162 (warning)
 - No unit tests yet
 - No Swagger/OpenAPI documentation
 

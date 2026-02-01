@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: pawsitive-db-prod
+    environment:
+      POSTGRES_DB: pawsitive_haven
+      POSTGRES_USER: ${DB_USER:-pawsitive}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pawsitive} -d pawsitive_haven"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - pawsitive-network
+
+  api:
+    build:
+      context: ./src/PawsitiveHaven.Api
+      dockerfile: Dockerfile
+    container_name: pawsitive-api-prod
+    environment:
+      - DATABASE_URL=Host=postgres;Database=pawsitive_haven;Username=${DB_USER:-pawsitive};Password=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - OPENAI__APIKEY=${OPENAI_API_KEY}
+      - ASPNETCORE_ENVIRONMENT=Production
+    ports:
+      - "5052:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pawsitive-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  web:
+    build:
+      context: ./src/PawsitiveHaven.Web
+      dockerfile: Dockerfile
+    container_name: pawsitive-web-prod
+    environment:
+      - ApiBaseUrl=http://api:8080/
+      - ASPNETCORE_ENVIRONMENT=Production
+    ports:
+      - "5051:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pawsitive-network
+
+volumes:
+  postgres_data:
+
+networks:
+  pawsitive-network:
+    driver: bridge

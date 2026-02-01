@@ -1,4 +1,4 @@
-namespace PawsitiveHaven.Api.Models.DTOs;
+namespace PawsitiveHaven.Web.Models;
 
 public record UserDto(
     int Id,
@@ -21,5 +21,19 @@ public record UpdateUserRequest(
     string? Email,
     string? Password,
     string? UserLevel,
+    bool? IsActive
+);
+
+public record CreateFaqRequest(
+    string Question,
+    string Answer,
+    int DisplayOrder,
+    bool IsActive
+);
+
+public record UpdateFaqRequest(
+    string? Question,
+    string? Answer,
+    int? DisplayOrder,
     bool? IsActive
 );

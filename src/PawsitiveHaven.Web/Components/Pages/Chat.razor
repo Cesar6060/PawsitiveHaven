@@ -43,7 +43,7 @@ else
                     @foreach (var conv in conversations)
                     {
                         <div class="conversation-item @(currentConversationId == conv.Id ? "active" : "")"
-                            @onclick="() => LoadConversation(conv.Id)">
+                            @onclick="async () => await LoadConversation(conv.Id)">
                             <div class="conversation-title">@(conv.Title ?? "New Chat")</div>
                             <div class="conversation-date">@conv.UpdatedAt.ToString("MMM dd")</div>
                         </div>
@@ -159,7 +159,7 @@ else
                     @foreach (var conv in conversations)
                     {
                         <div class="conversation-item @(currentConversationId == conv.Id ? "active" : "")"
-                            @onclick="() => { LoadConversation(conv.Id); ToggleMobileSidebar(); }">
+                            @onclick="async () => { await LoadConversation(conv.Id); ToggleMobileSidebar(); }">
                             <div class="conversation-title">@(conv.Title ?? "New Chat")</div>
                             <div class="conversation-date">@conv.UpdatedAt.ToString("MMM dd")</div>
                         </div>

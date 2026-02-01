@@ -262,7 +262,7 @@ After running `init.sql`, these accounts are available:
 | #1 | Phases 1-3 | Merged |
 | #2 | Phase 4: Core Features | Merged |
 | #3 | Phase 5: AI Integration | Merged |
-| #5 | Phase 6: Admin + Docker | Open (awaiting review) |
+| #5 | Phase 6: Admin + Docker | Merged |
 
 ---
 
@@ -270,12 +270,12 @@ After running `init.sql`, these accounts are available:
 
 ### Immediate (Before Production)
 
-1. **Merge PR #5** - Admin features and Docker setup
-2. **Test Production Docker Build:**
+1. **Test Production Docker Build:**
    ```bash
    docker-compose -f docker-compose.prod.yml up --build
    ```
-3. **Verify all features work end-to-end**
+2. **Verify all features work end-to-end**
+3. **Set up production environment variables**
 
 ### Short-term Enhancements
 

@@ -2,6 +2,7 @@
 @inject AuthService Auth
 @inject AuthStateService AuthState
 @inject NavigationManager Navigation
+@inject ILogger<Register> Logger
 
 <PageTitle>Register - Pawsitive Haven</PageTitle>
 
@@ -112,8 +113,9 @@
                 errorMessage = response.Message ?? "Registration failed";
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Logger.LogError(ex, "Registration failed for user {Username}", registerModel.Username);
             errorMessage = "An error occurred. Please try again.";
         }
         finally

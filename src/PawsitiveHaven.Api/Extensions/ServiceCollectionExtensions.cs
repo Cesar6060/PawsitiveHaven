@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPetService, PetService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IFaqService, FaqService>();
+        services.AddScoped<IAiService, AiService>();
 
         return services;
     }

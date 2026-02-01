@@ -159,7 +159,7 @@ else
                     @foreach (var conv in conversations)
                     {
                         <div class="conversation-item @(currentConversationId == conv.Id ? "active" : "")"
-                            @onclick="async () => { await LoadConversation(conv.Id); ToggleMobileSidebar(); }">
+                            @onclick="async () => { try { await LoadConversation(conv.Id); } finally { ToggleMobileSidebar(); } }">
                             <div class="conversation-title">@(conv.Title ?? "New Chat")</div>
                             <div class="conversation-date">@conv.UpdatedAt.ToString("MMM dd")</div>
                         </div>

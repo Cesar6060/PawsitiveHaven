@@ -19,9 +19,9 @@ public record CreateUserRequest(
 );
 
 public record UpdateUserRequest(
-    string? Username,
-    string? Email,
-    string? Password,
+    [StringLength(50, MinimumLength = 3)] string? Username,
+    [EmailAddress] string? Email,
+    [StringLength(100, MinimumLength = 8)] string? Password,
     string? UserLevel,
     bool? IsActive
 );

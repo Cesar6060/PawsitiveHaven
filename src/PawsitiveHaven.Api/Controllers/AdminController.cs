@@ -160,7 +160,10 @@ public class AdminController : ControllerBase
             return NotFound();
 
         // Prevent deleting yourself
-        var currentUserId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var parsedId) ? parsedId : 0;
+        var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserIdClaim) || !int.TryParse(currentUserIdClaim, out var currentUserId))
+            return Unauthorized("Invalid user session");
+
         if (user.Id == currentUserId)
             return BadRequest("Cannot delete your own account");
 

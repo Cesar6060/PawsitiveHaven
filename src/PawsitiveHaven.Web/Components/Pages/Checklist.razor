@@ -158,11 +158,11 @@ else
 
                             <div class="mb-3">
                                 <label class="form-label">Pet (optional)</label>
-                                <InputSelect class="form-select" @bind-Value="appointmentForm.PetId">
+                                <InputSelect class="form-select" @bind-Value="appointmentForm.PetIdString">
                                     <option value="">No specific pet</option>
                                     @foreach (var pet in pets)
                                     {
-                                        <option value="@pet.Id">@pet.Name (@pet.Species)</option>
+                                        <option value="@pet.Id.ToString()">@pet.Name (@pet.Species)</option>
                                     }
                                 </InputSelect>
                             </div>
@@ -213,6 +213,10 @@ else
                         <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
                     </div>
                     <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(errorMessage) && showDeleteModal)
+                        {
+                            <div class="alert alert-danger">@errorMessage</div>
+                        }
                         <p>Are you sure you want to delete <strong>@appointmentToDelete?.Title</strong>?</p>
                         <p class="text-muted small">This action cannot be undone.</p>
                     </div>
@@ -312,7 +316,7 @@ else
             Id = appointment.Id,
             Title = appointment.Title,
             Description = appointment.Description,
-            PetId = appointment.PetId,
+            PetIdString = appointment.PetId?.ToString(),
             Date = appointment.AppointmentDate,
             TimeString = appointment.AppointmentTime?.ToString("HH:mm")
         };
@@ -408,6 +412,10 @@ else
                 CloseDeleteModal();
                 await LoadDataAsync();
             }
+            else
+            {
+                errorMessage = "Failed to delete task. Please try again.";
+            }
         }
         finally
         {
@@ -420,7 +428,8 @@ else
         public int Id { get; set; }
         public string? Title { get; set; }
         public string? Description { get; set; }
-        public int? PetId { get; set; }
+        public string? PetIdString { get; set; }
+        public int? PetId => string.IsNullOrEmpty(PetIdString) ? null : int.TryParse(PetIdString, out var id) ? id : null;
         public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
         public string? TimeString { get; set; }
     }

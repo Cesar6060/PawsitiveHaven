@@ -204,6 +204,10 @@ else
                         <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
                     </div>
                     <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(errorMessage) && showDeleteModal)
+                        {
+                            <div class="alert alert-danger">@errorMessage</div>
+                        }
                         <p>Are you sure you want to delete <strong>@petToDelete?.Name</strong>?</p>
                         <p class="text-muted small">This action cannot be undone.</p>
                     </div>
@@ -402,6 +406,10 @@ else
             {
                 CloseDeleteModal();
                 await LoadPetsAsync();
+            }
+            else
+            {
+                errorMessage = "Failed to delete pet. Please try again.";
             }
         }
         finally

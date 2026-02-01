@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PawsitiveHaven.Api.Models.DTOs;
 
 public record UserDto(
@@ -10,9 +12,9 @@ public record UserDto(
 );
 
 public record CreateUserRequest(
-    string Username,
-    string Email,
-    string Password,
+    [Required, StringLength(50, MinimumLength = 3)] string Username,
+    [Required, EmailAddress] string Email,
+    [Required, StringLength(100, MinimumLength = 8)] string Password,
     string? UserLevel
 );
 

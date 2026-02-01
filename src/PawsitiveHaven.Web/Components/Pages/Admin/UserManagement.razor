@@ -70,7 +70,7 @@ else
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         <button class="btn btn-sm btn-outline-danger" @onclick="() => ShowDeleteConfirm(user)"
-                                            disabled="@(user.Username == AuthState.Username)">
+                                            disabled="@(user.Id == AuthState.UserId)">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>

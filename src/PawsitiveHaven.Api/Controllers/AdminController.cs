@@ -160,7 +160,7 @@ public class AdminController : ControllerBase
             return NotFound();
 
         // Prevent deleting yourself
-        var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var currentUserId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var parsedId) ? parsedId : 0;
         if (user.Id == currentUserId)
             return BadRequest("Cannot delete your own account");
 
@@ -171,20 +171,3 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 }
-
-public record UserDto(
-    int Id,
-    string Username,
-    string Email,
-    string UserLevel,
-    bool IsActive,
-    DateTime CreatedAt
-);
-
-public record UpdateUserRequest(
-    string? Username,
-    string? Email,
-    string? Password,
-    string? UserLevel,
-    bool? IsActive
-);

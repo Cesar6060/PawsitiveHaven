@@ -99,14 +99,14 @@ CREATE TABLE conversation_messages (
 -- Create index for conversation messages
 CREATE INDEX idx_conversation_messages_conversation_id ON conversation_messages(conversation_id);
 
--- Insert default admin user (password: Admin123!)
--- BCrypt hash for 'Admin123!' with work factor 12
+-- Insert default admin user (password: Test12345)
+-- BCrypt hash for 'Test12345' with work factor 12
 INSERT INTO users (username, email, password_hash, user_level) VALUES
-('admin', 'admin@pawsitivehaven.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.S8F6f.5B9.xE2S', 'Admin');
+('admin', 'admin@pawsitivehaven.com', '$2a$12$wezPYwqGlaMUUdaRIOSuw.68/M/3oclTprLG10gEl7JGzazsc2yRq', 'Admin');
 
--- Insert demo user (password: Demo123!)
+-- Insert demo user (password: Test12345)
 INSERT INTO users (username, email, password_hash, user_level) VALUES
-('demo', 'demo@pawsitivehaven.com', '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'User');
+('demo', 'demo@pawsitivehaven.com', '$2a$12$wezPYwqGlaMUUdaRIOSuw.68/M/3oclTprLG10gEl7JGzazsc2yRq', 'User');
 
 -- Insert sample pets for demo user
 INSERT INTO pets (user_id, name, species, breed, age, sex, bio) VALUES

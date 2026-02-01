@@ -10,12 +10,11 @@ builder.Services.AddRazorComponents()
 // Add HTTP client for API calls
 builder.Services.AddHttpClient<ApiClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5052");
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5052/");
 });
 
 // Register services as singletons to maintain state across the session
 builder.Services.AddSingleton<AuthStateService>();
-builder.Services.AddScoped<ApiClient>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PetService>();
 builder.Services.AddScoped<AppointmentService>();

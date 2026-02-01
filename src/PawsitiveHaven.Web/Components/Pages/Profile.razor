@@ -1,0 +1,423 @@
+@page "/profile"
+@page "/profile/{PetId:int?}"
+@inject AuthStateService AuthState
+@inject PetService PetSvc
+@inject NavigationManager Navigation
+
+<PageTitle>My Pets - Pawsitive Haven</PageTitle>
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="text-center py-5">
+        <p>Please log in to view your pets.</p>
+        <a href="/login" class="btn btn-primary">Login</a>
+    </div>
+}
+else
+{
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>My Pets</h1>
+            <button class="btn btn-primary" @onclick="ShowAddModal">
+                <i class="bi bi-plus-lg me-1"></i> Add Pet
+            </button>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Loading pets...</p>
+            </div>
+        }
+        else if (pets.Count == 0)
+        {
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <img src="/Assets/pet-icon.svg" alt="No pets" style="width: 80px; opacity: 0.5;" />
+                    <h4 class="mt-3">No Pets Yet</h4>
+                    <p class="text-muted">Add your first furry friend to get started!</p>
+                    <button class="btn btn-primary" @onclick="ShowAddModal">
+                        <i class="bi bi-plus-lg me-1"></i> Add Your First Pet
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                @foreach (var pet in pets)
+                {
+                    <div class="col">
+                        <div class="card h-100 pet-profile-card @(selectedPet?.Id == pet.Id ? "border-primary" : "")">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start">
+                                    <div class="pet-avatar-lg me-3">
+                                        @if (pet.Species?.ToLower() == "dog")
+                                        {
+                                            <img src="/Assets/dog-icon.svg" alt="Dog" class="pet-icon" />
+                                        }
+                                        else if (pet.Species?.ToLower() == "cat")
+                                        {
+                                            <img src="/Assets/cat-icon.svg" alt="Cat" class="pet-icon" />
+                                        }
+                                        else
+                                        {
+                                            <img src="/Assets/pet-icon.svg" alt="Pet" class="pet-icon" />
+                                        }
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">@pet.Name</h5>
+                                        <p class="text-muted mb-2">
+                                            @pet.Species
+                                            @if (!string.IsNullOrEmpty(pet.Breed))
+                                            {
+                                                <text> &bull; @pet.Breed</text>
+                                            }
+                                        </p>
+                                        <div class="pet-details">
+                                            @if (pet.Age.HasValue)
+                                            {
+                                                <span class="badge bg-light text-dark me-1">
+                                                    @pet.Age @(pet.Age == 1 ? "year" : "years") old
+                                                </span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(pet.Sex))
+                                            {
+                                                <span class="badge bg-light text-dark">@pet.Sex</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(pet.Bio))
+                                {
+                                    <p class="card-text mt-3 text-muted small">@pet.Bio</p>
+                                }
+                            </div>
+                            <div class="card-footer bg-transparent border-0">
+                                <div class="btn-group w-100">
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="() => ShowEditModal(pet)">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => ShowDeleteConfirm(pet)">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Add/Edit Pet Modal -->
+    @if (showModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(isEditing ? "Edit Pet" : "Add New Pet")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <EditForm Model="petForm" OnValidSubmit="SavePet">
+                        <DataAnnotationsValidator />
+                        <div class="modal-body">
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger">@errorMessage</div>
+                            }
+
+                            <div class="mb-3">
+                                <label class="form-label">Name *</label>
+                                <InputText class="form-control" @bind-Value="petForm.Name" placeholder="Pet's name" />
+                                <ValidationMessage For="@(() => petForm.Name)" />
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Species *</label>
+                                    <InputSelect class="form-select" @bind-Value="petForm.Species">
+                                        <option value="">Select species</option>
+                                        <option value="Dog">Dog</option>
+                                        <option value="Cat">Cat</option>
+                                        <option value="Bird">Bird</option>
+                                        <option value="Fish">Fish</option>
+                                        <option value="Rabbit">Rabbit</option>
+                                        <option value="Hamster">Hamster</option>
+                                        <option value="Other">Other</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => petForm.Species)" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Breed</label>
+                                    <InputText class="form-control" @bind-Value="petForm.Breed" placeholder="Breed (optional)" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Age (years)</label>
+                                    <InputNumber class="form-control" @bind-Value="petForm.Age" placeholder="Age" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Sex</label>
+                                    <InputSelect class="form-select" @bind-Value="petForm.Sex">
+                                        <option value="">Select sex</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Bio</label>
+                                <InputTextArea class="form-control" @bind-Value="petForm.Bio" rows="3"
+                                    placeholder="Tell us about your pet..." />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                @(isEditing ? "Save Changes" : "Add Pet")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Delete Confirmation Modal -->
+    @if (showDeleteModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Delete Pet</h5>
+                        <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete <strong>@petToDelete?.Name</strong>?</p>
+                        <p class="text-muted small">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @onclick="DeletePet" disabled="@isDeleting">
+                            @if (isDeleting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<style>
+    .pet-profile-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .pet-profile-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .pet-avatar-lg {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-cream, #FFF7ED);
+        border-radius: 12px;
+    }
+
+    .pet-icon {
+        width: 40px;
+        height: 40px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int? PetId { get; set; }
+
+    private List<PetDto> pets = new();
+    private PetDto? selectedPet;
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private bool isDeleting = false;
+    private string? errorMessage;
+    private PetDto? petToDelete;
+    private PetFormModel petForm = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        await LoadPetsAsync();
+
+        if (PetId.HasValue)
+        {
+            selectedPet = pets.FirstOrDefault(p => p.Id == PetId.Value);
+        }
+    }
+
+    private async Task LoadPetsAsync()
+    {
+        isLoading = true;
+        try
+        {
+            pets = await PetSvc.GetPetsAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        petForm = new PetFormModel();
+        isEditing = false;
+        errorMessage = null;
+        showModal = true;
+    }
+
+    private void ShowEditModal(PetDto pet)
+    {
+        petForm = new PetFormModel
+        {
+            Id = pet.Id,
+            Name = pet.Name,
+            Species = pet.Species,
+            Breed = pet.Breed,
+            Age = pet.Age,
+            Sex = pet.Sex,
+            Bio = pet.Bio
+        };
+        isEditing = true;
+        errorMessage = null;
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        petForm = new PetFormModel();
+    }
+
+    private async Task SavePet()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            if (isEditing)
+            {
+                var request = new UpdatePetRequest(
+                    petForm.Name,
+                    petForm.Species,
+                    petForm.Breed,
+                    petForm.Age,
+                    petForm.Sex,
+                    petForm.Bio,
+                    null
+                );
+                var result = await PetSvc.UpdatePetAsync(petForm.Id, request);
+                if (result == null)
+                {
+                    errorMessage = "Failed to update pet. Please try again.";
+                    return;
+                }
+            }
+            else
+            {
+                var request = new CreatePetRequest(
+                    petForm.Name ?? "",
+                    petForm.Species ?? "",
+                    petForm.Breed,
+                    petForm.Age,
+                    petForm.Sex,
+                    petForm.Bio,
+                    null
+                );
+                var result = await PetSvc.CreatePetAsync(request);
+                if (result == null)
+                {
+                    errorMessage = "Failed to add pet. Please try again.";
+                    return;
+                }
+            }
+
+            CloseModal();
+            await LoadPetsAsync();
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void ShowDeleteConfirm(PetDto pet)
+    {
+        petToDelete = pet;
+        showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        petToDelete = null;
+    }
+
+    private async Task DeletePet()
+    {
+        if (petToDelete == null) return;
+
+        isDeleting = true;
+        try
+        {
+            var success = await PetSvc.DeletePetAsync(petToDelete.Id);
+            if (success)
+            {
+                CloseDeleteModal();
+                await LoadPetsAsync();
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private class PetFormModel
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? Species { get; set; }
+        public string? Breed { get; set; }
+        public int? Age { get; set; }
+        public string? Sex { get; set; }
+        public string? Bio { get; set; }
+    }
+}

@@ -1,4 +1,4 @@
-namespace PawsitiveHaven.Api.Models.DTOs;
+namespace PawsitiveHaven.Web.Models;
 
 public record ChatRequest(
     string Message,
@@ -33,4 +33,10 @@ public record PetBioRequest(
     int? Age,
     string? Sex,
     string? Personality
+);
+
+public record PetBioResponse(
+    bool Success,
+    string? Bio,
+    string? Error
 );

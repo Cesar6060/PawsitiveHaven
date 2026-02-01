@@ -1,0 +1,77 @@
+@page "/faq"
+@inject FaqService FaqSvc
+
+<PageTitle>FAQ - Pawsitive Haven</PageTitle>
+
+<div class="container-fluid">
+    <div class="text-center mb-4">
+        <h1>Frequently Asked Questions</h1>
+        <p class="text-muted">Find answers to common questions about our services</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Loading FAQs...</p>
+        </div>
+    }
+    else if (faqs.Count == 0)
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-question-circle fs-1 text-muted"></i>
+                <h4 class="mt-3">No FAQs Available</h4>
+                <p class="text-muted">Check back later for frequently asked questions.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="accordion" id="faqAccordion">
+            @foreach (var (faq, index) in faqs.Select((f, i) => (f, i)))
+            {
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button @(index == 0 ? "" : "collapsed")" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq-@faq.Id">
+                            <i class="bi bi-question-circle me-2 text-primary"></i>
+                            @faq.Question
+                        </button>
+                    </h2>
+                    <div id="faq-@faq.Id" class="accordion-collapse collapse @(index == 0 ? "show" : "")"
+                        data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            @faq.Answer
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="text-center mt-4">
+            <p class="text-muted">Can't find what you're looking for?</p>
+            <a href="/chat" class="btn btn-primary">
+                <i class="bi bi-chat-dots me-1"></i> Ask Our AI Assistant
+            </a>
+        </div>
+    }
+</div>
+
+@code {
+    private List<FaqDto> faqs = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            faqs = await FaqSvc.GetFaqsAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

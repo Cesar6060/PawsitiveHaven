@@ -20,8 +20,9 @@ public class AiController : ControllerBase
 
     private int GetUserId()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.Parse(userIdClaim ?? "0");
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException("User ID not found in claims");
+        return int.Parse(userIdClaim);
     }
 
     [HttpPost("chat")]

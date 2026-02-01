@@ -125,16 +125,18 @@ else
             </div>
 
             <div class="chat-input-area">
-                <div class="input-container">
-                    <textarea class="form-control" rows="1" placeholder="Type your message..."
-                        @bind="inputMessage" @bind:event="oninput"
-                        @onkeydown="HandleKeyDown"
-                        disabled="@isLoading"></textarea>
-                    <button class="btn btn-primary send-btn" @onclick="SendMessage"
-                        disabled="@(isLoading || string.IsNullOrWhiteSpace(inputMessage))">
-                        <i class="bi bi-send-fill"></i>
-                    </button>
-                </div>
+                <form @onsubmit="SendMessage" @onsubmit:preventDefault>
+                    <div class="input-container">
+                        <textarea class="form-control" rows="1" placeholder="Type your message..."
+                            @bind="inputMessage" @bind:event="oninput"
+                            @onkeydown="HandleKeyDown" @onkeydown:preventDefault="shouldPreventDefault"
+                            disabled="@isLoading"></textarea>
+                        <button type="submit" class="btn btn-primary send-btn"
+                            disabled="@(isLoading || string.IsNullOrWhiteSpace(inputMessage))">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </form>
                 <small class="text-muted mt-1 d-block text-center">
                     AI can make mistakes. Verify important information.
                 </small>
@@ -429,6 +431,7 @@ else
     private bool isLoading = false;
     private bool isLoadingConversations = true;
     private bool showMobileSidebar = false;
+    private bool shouldPreventDefault = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -485,12 +488,10 @@ else
         await SendMessage();
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs e)
+    private void HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !e.ShiftKey)
-        {
-            await SendMessage();
-        }
+        // Set preventDefault for Enter without Shift to prevent newline in textarea
+        shouldPreventDefault = e.Key == "Enter" && !e.ShiftKey;
     }
 
     private async Task SendMessage()
@@ -543,7 +544,7 @@ else
         await Task.Delay(50);
         try
         {
-            await JS.InvokeVoidAsync("eval", "document.querySelector('.chat-messages')?.scrollTo(0, document.querySelector('.chat-messages')?.scrollHeight)");
+            await JS.InvokeVoidAsync("chatHelpers.scrollToBottom", ".chat-messages");
         }
         catch { }
     }

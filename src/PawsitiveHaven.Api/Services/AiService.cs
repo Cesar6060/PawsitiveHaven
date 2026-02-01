@@ -78,7 +78,7 @@ Key information about Pawsitive Haven:
             await _conversationRepo.UpdateAsync(conversation);
 
             // Build messages for OpenAI
-            var messages = BuildChatMessages(conversation);
+            var messages = await BuildChatMessagesAsync(conversation);
 
             // Call OpenAI
             var completion = await _chatClient.CompleteChatAsync(messages);
@@ -166,12 +166,12 @@ Make it engaging and help potential adopters connect with this pet. Focus on the
         return true;
     }
 
-    private List<ChatMessage> BuildChatMessages(Conversation conversation)
+    private async Task<List<ChatMessage>> BuildChatMessagesAsync(Conversation conversation)
     {
         var messages = new List<ChatMessage>();
 
         // Add system prompt with FAQ context
-        var systemPrompt = BuildSystemPromptWithFaqs();
+        var systemPrompt = await BuildSystemPromptWithFaqsAsync();
         messages.Add(new SystemChatMessage(systemPrompt));
 
         // Add conversation history (limit to last 20 messages for context window)
@@ -190,14 +190,15 @@ Make it engaging and help potential adopters connect with this pet. Focus on the
         return messages;
     }
 
-    private string BuildSystemPromptWithFaqs()
+    private async Task<string> BuildSystemPromptWithFaqsAsync()
     {
-        var faqs = _faqRepo.GetActiveFaqsAsync().Result.Take(10);
+        var faqs = await _faqRepo.GetActiveFaqsAsync();
+        var topFaqs = faqs.Take(10);
 
-        if (!faqs.Any())
+        if (!topFaqs.Any())
             return SystemPrompt;
 
-        var faqContext = string.Join("\n\n", faqs.Select(f => $"Q: {f.Question}\nA: {f.Answer}"));
+        var faqContext = string.Join("\n\n", topFaqs.Select(f => $"Q: {f.Question}\nA: {f.Answer}"));
 
         return $@"{SystemPrompt}
 

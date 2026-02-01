@@ -378,3 +378,78 @@ After running `init.sql`, these accounts are available:
 ## Contact
 
 For questions or issues, create a GitHub issue in the repository.
+
+---
+
+## AI Agent Handoff Prompt
+
+Use the following prompt to onboard another AI agent to continue development on this project:
+
+```
+You are taking over development of Pawsitive Haven, a pet management system with AI capabilities.
+
+## Project Location
+/Users/cesar/cesar-portfolio-starter/PawsitiveHaven/
+
+## Tech Stack
+- Backend: ASP.NET Core 9 Web API (src/PawsitiveHaven.Api)
+- Frontend: Blazor Server with prerender disabled (src/PawsitiveHaven.Web)
+- Database: PostgreSQL 17 (via Docker)
+- AI: OpenAI GPT-4o-mini
+- Auth: JWT + BCrypt (work factor 12)
+
+## Current State
+All 6 phases are COMPLETE and merged to main:
+- Phase 1-3: Project setup, Docker, PostgreSQL, Auth, Frontend foundation
+- Phase 4: Pet profiles, appointments/tasks management
+- Phase 5: AI chat with conversation history, pet bio generator, FAQ integration
+- Phase 6: Admin dashboard (user/FAQ management), Settings, Resources, Production Docker
+
+## How to Run
+1. Start database: `docker-compose up -d`
+2. Backend: `cd src/PawsitiveHaven.Api && dotnet run` (runs on :5052)
+3. Frontend: `cd src/PawsitiveHaven.Web && dotnet run` (runs on :5051)
+
+## Test Accounts
+- admin / Test12345 (Admin role)
+- testuser / Test12345 (User role)
+
+## Key Files to Know
+- Backend entry: src/PawsitiveHaven.Api/Program.cs
+- Frontend entry: src/PawsitiveHaven.Web/Program.cs
+- Database schema: database/init.sql
+- Production Docker: docker-compose.prod.yml
+- Full documentation: DOCUMENTATION.md
+
+## Code Patterns
+- Repository pattern for data access (Data/Repositories/)
+- Services for business logic (Services/)
+- DTOs for API contracts (Models/DTOs/)
+- Proper DI throughout - never use `new` for services
+- Admin endpoints use [Authorize(Policy = "AdminOnly")]
+- Greptile reviews all PRs - address feedback before merging
+
+## Known Technical Debt
+- Unused `ex` variable in Login.razor and Register.razor (warnings)
+- Unawaited async call in Chat.razor line 162 (warning)
+- No unit tests yet
+- No Swagger/OpenAPI documentation
+
+## Suggested Next Tasks (in priority order)
+1. Test production Docker build: `docker-compose -f docker-compose.prod.yml up --build`
+2. Add unit tests for critical services (AuthService, PetService)
+3. Add Swagger documentation to API
+4. Implement pet photo upload feature
+5. Add email notifications (password reset, appointment reminders)
+6. Implement dark mode toggle
+
+## Git Workflow
+1. Create feature branch from main
+2. Make changes following existing patterns
+3. Run `dotnet build` to verify
+4. Create PR targeting main
+5. Wait for Greptile review and address feedback
+6. Merge after approval
+
+Read DOCUMENTATION.md for complete details on architecture, API endpoints, and future roadmap.
+```

@@ -1,0 +1,158 @@
+@page "/resources"
+@inject AuthStateService AuthState
+
+<PageTitle>Pet Resources - Pawsitive Haven</PageTitle>
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-lock fs-1 text-muted"></i>
+        <h4 class="mt-3">Please Log In</h4>
+        <p class="text-muted">You need to be logged in to view resources.</p>
+        <a href="/login" class="btn btn-primary">Go to Login</a>
+    </div>
+}
+else
+{
+    <div class="container">
+        <h1 class="mb-4">Pet Resources</h1>
+        <p class="text-muted mb-4">Helpful guides, tips, and external resources for pet owners.</p>
+
+        <!-- Pet Care Basics -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-heart-pulse me-2"></i>Pet Care Basics
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-droplet text-primary fs-4 me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Hydration</h6>
+                                <p class="text-muted small mb-0">
+                                    Ensure fresh water is always available. Dogs need about 1 oz of water per pound of body weight daily.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-egg-fried text-warning fs-4 me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Nutrition</h6>
+                                <p class="text-muted small mb-0">
+                                    Feed age-appropriate, high-quality food. Avoid chocolate, grapes, onions, and xylitol.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-activity text-success fs-4 me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Exercise</h6>
+                                <p class="text-muted small mb-0">
+                                    Regular physical activity keeps pets healthy. Most dogs need 30-60 minutes of exercise daily.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-hospital text-danger fs-4 me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Veterinary Care</h6>
+                                <p class="text-muted small mb-0">
+                                    Annual checkups, vaccinations, and preventive care are essential for a healthy pet.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Information -->
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle me-2"></i>Emergency Information
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger mb-3">
+                    <strong>If your pet is experiencing a medical emergency, contact your veterinarian or emergency animal hospital immediately.</strong>
+                </div>
+                <h6>Signs of Emergency:</h6>
+                <ul class="mb-3">
+                    <li>Difficulty breathing or choking</li>
+                    <li>Severe bleeding or trauma</li>
+                    <li>Inability to urinate or defecate</li>
+                    <li>Seizures or collapse</li>
+                    <li>Ingestion of toxic substances</li>
+                    <li>Severe vomiting or diarrhea</li>
+                </ul>
+                <h6>Poison Control:</h6>
+                <p class="mb-0">
+                    <strong>ASPCA Animal Poison Control:</strong>
+                    <a href="tel:888-426-4435" class="text-danger">(888) 426-4435</a>
+                    <small class="text-muted">(consultation fee may apply)</small>
+                </p>
+            </div>
+        </div>
+
+        <!-- Helpful Links -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-link-45deg me-2"></i>Helpful External Resources
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="https://www.aspca.org/pet-care" target="_blank" rel="noopener"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>ASPCA Pet Care</strong>
+                        <br><small class="text-muted">Comprehensive pet care guides and resources</small>
+                    </div>
+                    <i class="bi bi-box-arrow-up-right text-muted"></i>
+                </a>
+                <a href="https://www.akc.org/dog-owners/" target="_blank" rel="noopener"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>American Kennel Club</strong>
+                        <br><small class="text-muted">Dog breed information and training tips</small>
+                    </div>
+                    <i class="bi bi-box-arrow-up-right text-muted"></i>
+                </a>
+                <a href="https://www.catvets.com/cat-owners" target="_blank" rel="noopener"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>American Association of Feline Practitioners</strong>
+                        <br><small class="text-muted">Cat health and behavior resources</small>
+                    </div>
+                    <i class="bi bi-box-arrow-up-right text-muted"></i>
+                </a>
+                <a href="https://www.petfinder.com/pet-adoption/" target="_blank" rel="noopener"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Petfinder Adoption Guide</strong>
+                        <br><small class="text-muted">Tips for adopting and welcoming a new pet</small>
+                    </div>
+                    <i class="bi bi-box-arrow-up-right text-muted"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Need More Help -->
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <i class="bi bi-chat-heart fs-1 text-primary mb-3"></i>
+                <h5>Need Personalized Advice?</h5>
+                <p class="text-muted">
+                    Our AI assistant can help answer your pet-related questions.
+                </p>
+                <a href="/chat" class="btn btn-primary">
+                    <i class="bi bi-chat-dots me-1"></i> Chat with AI Assistant
+                </a>
+            </div>
+        </div>
+    </div>
+}

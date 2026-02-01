@@ -64,8 +64,8 @@ PawsitiveHaven/
 
 | Username | Password   | Role  |
 |----------|------------|-------|
-| admin    | Admin123!  | Admin |
-| demo     | Demo123!   | User  |
+| admin    | Test12345  | Admin |
+| demo     | Test12345  | User  |
 
 ## API Endpoints
 

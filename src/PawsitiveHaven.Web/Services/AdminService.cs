@@ -65,4 +65,25 @@ public class AdminService
     {
         return await _apiClient.DeleteAsync($"api/faqs/{id}");
     }
+
+    // Escalation Management
+    public async Task<EscalationListResponse?> GetEscalationsByStatusAsync(string status, int page = 1, int pageSize = 20)
+    {
+        return await _apiClient.GetAsync<EscalationListResponse>($"api/escalations/status/{status}?page={page}&pageSize={pageSize}");
+    }
+
+    public async Task<EscalationListResponse?> GetPendingEscalationsAsync(int page = 1, int pageSize = 20)
+    {
+        return await _apiClient.GetAsync<EscalationListResponse>($"api/escalations/pending?page={page}&pageSize={pageSize}");
+    }
+
+    public async Task<EscalationResponse?> GetEscalationAsync(int id)
+    {
+        return await _apiClient.GetAsync<EscalationResponse>($"api/escalations/{id}");
+    }
+
+    public async Task<EscalationResponse?> UpdateEscalationAsync(int id, UpdateEscalationRequest request)
+    {
+        return await _apiClient.PatchAsync<UpdateEscalationRequest, EscalationResponse>($"api/escalations/{id}", request);
+    }
 }

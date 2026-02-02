@@ -35,6 +35,16 @@ else
                 <p class="mt-2">Loading dashboard...</p>
             </div>
         }
+        else if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger d-flex align-items-center" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <div>
+                    @errorMessage
+                    <button class="btn btn-link p-0 ms-2" @onclick="LoadDashboardAsync">Try again</button>
+                </div>
+            </div>
+        }
         else if (stats != null)
         {
             <!-- Stats Cards -->
@@ -239,6 +249,7 @@ else
 @code {
     private DashboardStats? stats;
     private bool isLoading = true;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -251,9 +262,18 @@ else
     private async Task LoadDashboardAsync()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             stats = await AdminSvc.GetDashboardStatsAsync();
+            if (stats == null)
+            {
+                errorMessage = "Failed to load dashboard statistics. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "An error occurred while loading the dashboard.";
         }
         finally
         {

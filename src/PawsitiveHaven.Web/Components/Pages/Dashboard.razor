@@ -269,6 +269,13 @@ else
             return;
         }
 
+        // Redirect admins to the admin dashboard
+        if (AuthState.IsAdmin)
+        {
+            Navigation.NavigateTo("/admin");
+            return;
+        }
+
         await LoadDataAsync();
     }
 

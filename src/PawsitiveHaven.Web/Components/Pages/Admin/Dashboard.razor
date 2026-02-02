@@ -1,0 +1,271 @@
+@page "/admin"
+@page "/admin/dashboard"
+@inject AuthStateService AuthState
+@inject AdminService AdminSvc
+@inject NavigationManager Navigation
+
+<PageTitle>Admin Dashboard - Pawsitive Haven</PageTitle>
+
+@if (!AuthState.IsAuthenticated || !AuthState.IsAdmin)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-shield-lock fs-1 text-danger"></i>
+        <h4 class="mt-3">Access Denied</h4>
+        <p class="text-muted">You must be an administrator to access this page.</p>
+        <a href="/dashboard" class="btn btn-primary">Return to Dashboard</a>
+    </div>
+}
+else
+{
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-0">Admin Dashboard</h1>
+                <p class="text-muted mb-0">Welcome back, @AuthState.Username</p>
+            </div>
+            <div class="text-muted">
+                <i class="bi bi-clock me-1"></i>@DateTime.Now.ToString("dddd, MMMM d, yyyy")
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Loading dashboard...</p>
+            </div>
+        }
+        else if (stats != null)
+        {
+            <!-- Stats Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                                        <i class="bi bi-people fs-4 text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h3 class="mb-0">@stats.TotalFosters</h3>
+                                    <p class="text-muted mb-0 small">Active Fosters</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pt-0">
+                            <a href="/admin/users" class="text-primary text-decoration-none small">
+                                View all users <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                                        <i class="bi bi-heart fs-4 text-success"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h3 class="mb-0">@stats.TotalPets</h3>
+                                    <p class="text-muted mb-0 small">Total Pets</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pt-0">
+                            <span class="text-muted small">In foster care</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100 @(stats.PendingEscalations > 0 ? "border-warning" : "")">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="@(stats.PendingEscalations > 0 ? "bg-warning" : "bg-secondary bg-opacity-10") rounded-3 p-3">
+                                        <i class="bi bi-envelope-exclamation fs-4 @(stats.PendingEscalations > 0 ? "text-dark" : "text-secondary")"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h3 class="mb-0">@stats.PendingEscalations</h3>
+                                    <p class="text-muted mb-0 small">Pending Escalations</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pt-0">
+                            <a href="/admin/escalations" class="@(stats.PendingEscalations > 0 ? "text-warning" : "text-muted") text-decoration-none small">
+                                @(stats.PendingEscalations > 0 ? "Needs attention" : "All clear") <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-info bg-opacity-10 rounded-3 p-3">
+                                        <i class="bi bi-person-check fs-4 text-info"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h3 class="mb-0">@stats.ActiveUsers</h3>
+                                    <p class="text-muted mb-0 small">Active Users</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pt-0">
+                            <span class="text-muted small">Including admins</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <h5 class="mb-3">Quick Actions</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/admin/users" class="btn btn-outline-primary">
+                            <i class="bi bi-person-plus me-2"></i>Add New Foster
+                        </a>
+                        <a href="/admin/escalations" class="btn btn-outline-warning">
+                            <i class="bi bi-envelope me-2"></i>View Escalations
+                            @if (stats.PendingEscalations > 0)
+                            {
+                                <span class="badge bg-warning text-dark ms-1">@stats.PendingEscalations</span>
+                            }
+                        </a>
+                        <a href="/admin/faqs" class="btn btn-outline-secondary">
+                            <i class="bi bi-question-circle me-2"></i>Manage FAQs
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row g-4">
+                <!-- Recent Escalations -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="bi bi-envelope-exclamation me-2 text-warning"></i>Recent Escalations
+                            </h6>
+                            <a href="/admin/escalations" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="card-body p-0">
+                            @if (stats.RecentEscalations.Any())
+                            {
+                                <div class="list-group list-group-flush">
+                                    @foreach (var escalation in stats.RecentEscalations)
+                                    {
+                                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                                            <div class="ms-2 me-auto">
+                                                <div class="fw-bold">@escalation.UserName</div>
+                                                <small class="text-muted">@escalation.QuestionPreview</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge @GetStatusBadgeClass(escalation.Status)">@escalation.Status</span>
+                                                <br />
+                                                <small class="text-muted">@escalation.CreatedAt.ToString("MMM d")</small>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-check-circle fs-3"></i>
+                                    <p class="mb-0 mt-2">No recent escalations</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Users -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="bi bi-people me-2 text-primary"></i>Recent Users
+                            </h6>
+                            <a href="/admin/users" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="card-body p-0">
+                            @if (stats.RecentUsers.Any())
+                            {
+                                <div class="list-group list-group-flush">
+                                    @foreach (var user in stats.RecentUsers)
+                                    {
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="bi bi-person-circle me-2 text-muted"></i>
+                                                <strong>@user.Username</strong>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge @(user.UserLevel == "Admin" ? "bg-danger" : "bg-secondary")">@user.UserLevel</span>
+                                                <br />
+                                                <small class="text-muted">@user.CreatedAt.ToString("MMM d, yyyy")</small>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-people fs-3"></i>
+                                    <p class="mb-0 mt-2">No users yet</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private DashboardStats? stats;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated || !AuthState.IsAdmin)
+            return;
+
+        await LoadDashboardAsync();
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        isLoading = true;
+        try
+        {
+            stats = await AdminSvc.GetDashboardStatsAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Pending" => "bg-warning text-dark",
+        "InProgress" => "bg-info",
+        "Resolved" => "bg-success",
+        _ => "bg-secondary"
+    };
+}

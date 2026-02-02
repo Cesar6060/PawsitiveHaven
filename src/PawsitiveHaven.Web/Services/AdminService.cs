@@ -11,6 +11,12 @@ public class AdminService
         _apiClient = apiClient;
     }
 
+    // Dashboard
+    public async Task<DashboardStats?> GetDashboardStatsAsync()
+    {
+        return await _apiClient.GetAsync<DashboardStats>("api/admin/dashboard");
+    }
+
     // User Management
     public async Task<List<UserDto>> GetUsersAsync()
     {

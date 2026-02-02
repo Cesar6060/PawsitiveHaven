@@ -36,12 +36,18 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        // Core services
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPetService, PetService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IFaqService, FaqService>();
+
+        // AI and security services
+        services.AddMemoryCache();
+        services.AddSingleton<IChatSecurityService, ChatSecurityService>();
+        services.AddSingleton<IRateLimitService, RateLimitService>();
         services.AddScoped<IAiService, AiService>();
 
         return services;

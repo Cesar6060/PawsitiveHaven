@@ -1,6 +1,5 @@
-version: '3.8'
-
 services:
+  # PostgreSQL Database
   postgres:
     image: postgres:17-alpine
     container_name: pawsitive-db
@@ -19,6 +18,70 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - pawsitive-network
+
+  # .NET API Backend
+  api:
+    build:
+      context: ./src/PawsitiveHaven.Api
+      dockerfile: Dockerfile
+    container_name: pawsitive-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=pawsitive_haven;Username=${DB_USER:-pawsitive};Password=${DB_PASSWORD:-pawsitive123}
+      - Jwt__SecretKey=${JWT_SECRET:-DefaultSecretKeyThatShouldBeAtLeast32Characters!}
+      - Jwt__ExpirationHours=24
+      - OpenAI__ApiKey=${OPENAI_API_KEY:-}
+      - OpenAI__AssistantId=${OPENAI_ASSISTANT_ID:-}
+      - OpenAI__VectorStoreId=${OPENAI_VECTOR_STORE_ID:-}
+      - OpenAI__Model=gpt-4o-mini
+      - SendGrid__ApiKey=${SENDGRID_API_KEY:-}
+      - SendGrid__FromEmail=noreply@pawsitivehaven.org
+      - SendGrid__FromName=Pawsitive Haven AI Assistant
+      - SendGrid__EscalationEmail=fostersupport@pawsitivehaven.org
+    ports:
+      - "5050:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - pawsitive-network
+
+  # Blazor Server Frontend
+  web:
+    build:
+      context: ./src/PawsitiveHaven.Web
+      dockerfile: Dockerfile
+    container_name: pawsitive-web
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ApiBaseUrl=http://api:8080/
+    ports:
+      - "5001:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - pawsitive-network
 
 volumes:
   postgres_data:
+
+networks:
+  pawsitive-network:
+    driver: bridge

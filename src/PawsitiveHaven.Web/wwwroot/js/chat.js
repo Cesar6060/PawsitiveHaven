@@ -19,7 +19,7 @@ window.chatHelpers = {
         const textarea = document.querySelector(selector);
         if (textarea) {
             textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 96) + 'px';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
         }
     },
 

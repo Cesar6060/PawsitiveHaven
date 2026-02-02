@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PawsitiveHaven.Api.Configuration;
 using PawsitiveHaven.Api.Data;
 using PawsitiveHaven.Api.Data.Repositories;
 using PawsitiveHaven.Api.Services;
@@ -34,7 +35,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Core services
         services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -48,7 +49,34 @@ public static class ServiceCollectionExtensions
         services.AddMemoryCache();
         services.AddSingleton<IChatSecurityService, ChatSecurityService>();
         services.AddSingleton<IRateLimitService, RateLimitService>();
+
+        // OpenAI Assistant configuration
+        var assistantConfig = new OpenAiAssistantConfig
+        {
+            ApiKey = configuration["OpenAI:ApiKey"] ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? "",
+            AssistantId = configuration["OpenAI:AssistantId"] ?? Environment.GetEnvironmentVariable("OPENAI_ASSISTANT_ID"),
+            VectorStoreId = configuration["OpenAI:VectorStoreId"] ?? Environment.GetEnvironmentVariable("OPENAI_VECTOR_STORE_ID"),
+            Model = configuration["OpenAI:Model"] ?? "gpt-4o-mini",
+            AssistantName = configuration["OpenAI:AssistantName"] ?? "Pawsitive Haven Assistant"
+        };
+        services.AddSingleton(assistantConfig);
+        services.AddScoped<IOpenAiAssistantSetupService, OpenAiAssistantSetupService>();
         services.AddScoped<IAiService, AiService>();
+
+        // Email services
+        var sendGridConfig = new SendGridConfig
+        {
+            ApiKey = configuration["SendGrid:ApiKey"] ?? Environment.GetEnvironmentVariable("SENDGRID_API_KEY") ?? "",
+            FromEmail = configuration["SendGrid:FromEmail"] ?? "noreply@pawsitivehaven.org",
+            FromName = configuration["SendGrid:FromName"] ?? "Pawsitive Haven AI Assistant",
+            EscalationEmail = configuration["SendGrid:EscalationEmail"] ?? "fostersupport@pawsitivehaven.org"
+        };
+        services.AddSingleton(sendGridConfig);
+        services.AddScoped<IEmailService, EmailService>();
+
+        // Escalation services
+        services.AddScoped<IEscalationRepository, EscalationRepository>();
+        services.AddScoped<IEscalationService, EscalationService>();
 
         return services;
     }

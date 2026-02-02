@@ -14,7 +14,7 @@ builder.Services.AddOpenApi();
 // Add custom services via extension methods
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddRepositories();
-builder.Services.AddApplicationServices();
+builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddCorsPolicy(builder.Configuration);
 

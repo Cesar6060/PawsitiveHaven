@@ -104,6 +104,13 @@ else
                             <div class="message-content">
                                 <div class="message-text">@msg.Content</div>
                                 <div class="message-time">@msg.CreatedAt.ToString("h:mm tt")</div>
+                                @if (msg.Role == "assistant" && currentConversationId.HasValue)
+                                {
+                                    <button class="btn btn-link btn-sm contact-us-btn p-0 mt-1"
+                                            @onclick="() => OpenEscalationModal(msg)">
+                                        <i class="bi bi-envelope"></i> This didn't help - Contact Us
+                                    </button>
+                                }
                             </div>
                         </div>
                     }
@@ -168,21 +175,108 @@ else
             </div>
         </div>
     }
+
+    <!-- Escalation Modal -->
+    @if (showEscalationModal)
+    {
+        <div class="modal-overlay" @onclick="CloseEscalationModal">
+            <div class="escalation-modal" @onclick:stopPropagation="true">
+                <div class="modal-header-custom">
+                    <h5 class="mb-0"><i class="bi bi-envelope me-2"></i>Contact Foster Support</h5>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseEscalationModal">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+
+                @if (escalationSubmitted)
+                {
+                    <div class="modal-body text-center py-5">
+                        <div class="success-icon mb-3">
+                            <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                        </div>
+                        <h5>Request Submitted!</h5>
+                        <p class="text-muted">
+                            Our foster support team has received your request and will respond to
+                            <strong>@escalationEmail</strong> shortly.
+                        </p>
+                        <button class="btn btn-primary" @onclick="CloseEscalationModal">
+                            Close
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <form @onsubmit="SubmitEscalation" @onsubmit:preventDefault>
+                        <div class="modal-body">
+                            @if (!string.IsNullOrEmpty(escalationError))
+                            {
+                                <div class="alert alert-danger">@escalationError</div>
+                            }
+
+                            <div class="mb-3">
+                                <label class="form-label">Your Name</label>
+                                <input type="text" class="form-control" @bind="escalationName" required
+                                       placeholder="Enter your name" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Your Email</label>
+                                <input type="email" class="form-control" @bind="escalationEmail" required
+                                       placeholder="Enter your email address" />
+                                <small class="text-muted">We'll respond to this email address.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">What do you need help with?</label>
+                                <textarea class="form-control" rows="3" @bind="escalationQuestion" required
+                                          placeholder="Describe your question or issue..."></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Additional Context (Optional)</label>
+                                <textarea class="form-control" rows="2" @bind="escalationContext"
+                                          placeholder="Any additional details that might help..."></textarea>
+                            </div>
+
+                            <div class="form-text mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Your conversation history will be included to help our team understand your question.
+                            </div>
+                        </div>
+
+                        <div class="modal-footer-custom">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="CloseEscalationModal">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmittingEscalation">
+                                @if (isSubmittingEscalation)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Send to Support
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    }
 }
 
 <style>
     .chat-container {
         display: flex;
         height: calc(100vh - 120px);
-        background: var(--background, #FFFBF5);
+        background: #ffffff;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e5e5e5;
     }
 
     .chat-sidebar {
-        width: 280px;
-        background: white;
+        width: 260px;
+        background: #fafafa;
         border-right: 1px solid #e5e5e5;
         display: flex;
         flex-direction: column;
@@ -194,31 +288,35 @@ else
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background: #fff;
     }
 
     .conversation-list {
         flex: 1;
         overflow-y: auto;
+        padding: 0.5rem;
     }
 
     .conversation-item {
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f0f0f0;
+        border-radius: 8px;
         cursor: pointer;
         transition: background 0.2s;
+        margin-bottom: 0.25rem;
     }
 
     .conversation-item:hover {
-        background: var(--accent-cream, #FFF7ED);
+        background: #f0f0f0;
     }
 
     .conversation-item.active {
-        background: var(--accent-peach, #FDBA74);
+        background: #D97706;
         color: white;
     }
 
     .conversation-title {
-        font-size: 0.9rem;
+        font-size: 0.875rem;
+        font-weight: 500;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -227,13 +325,15 @@ else
     .conversation-date {
         font-size: 0.75rem;
         opacity: 0.7;
+        margin-top: 0.125rem;
     }
 
     .chat-main {
         flex: 1;
         display: flex;
         flex-direction: column;
-        background: white;
+        background: #ffffff;
+        min-width: 0;
     }
 
     .chat-header {
@@ -241,29 +341,46 @@ else
         border-bottom: 1px solid #e5e5e5;
         display: flex;
         align-items: center;
+        background: #fff;
     }
 
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding: 1rem;
+        padding: 1.5rem;
+        background: #ffffff;
     }
 
     .welcome-message {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         text-align: center;
         padding: 3rem 1rem;
+        height: 100%;
     }
 
     .welcome-icon {
-        width: 80px;
-        height: 80px;
-        background: var(--accent-cream, #FFF7ED);
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, #FFF7ED, #FDBA74);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 1rem;
-        color: var(--primary-orange, #D97706);
+        margin-bottom: 1.25rem;
+        color: #D97706;
+    }
+
+    .welcome-message h4 {
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-message p {
+        color: #666;
+        max-width: 400px;
     }
 
     .suggestion-chips {
@@ -275,25 +392,27 @@ else
     }
 
     .chip {
-        background: var(--accent-cream, #FFF7ED);
-        border: 1px solid var(--accent-peach, #FDBA74);
+        background: #fff;
+        border: 1px solid #e5e5e5;
         padding: 0.5rem 1rem;
         border-radius: 20px;
         font-size: 0.85rem;
         cursor: pointer;
         transition: all 0.2s;
+        color: #555;
     }
 
     .chip:hover {
-        background: var(--primary-orange, #D97706);
+        background: #D97706;
         color: white;
-        border-color: var(--primary-orange, #D97706);
+        border-color: #D97706;
     }
 
     .message {
         display: flex;
         gap: 0.75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
+        max-width: 100%;
     }
 
     .message-avatar {
@@ -303,23 +422,24 @@ else
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
         flex-shrink: 0;
     }
 
     .user-message .message-avatar {
-        background: var(--primary-orange, #D97706);
+        background: #D97706;
         color: white;
     }
 
     .assistant-message .message-avatar {
-        background: var(--accent-cream, #FFF7ED);
-        color: var(--primary-orange, #D97706);
+        background: #f5f5f5;
+        color: #D97706;
     }
 
     .message-content {
         flex: 1;
-        max-width: 80%;
+        min-width: 0;
+        max-width: 75%;
     }
 
     .user-message {
@@ -327,42 +447,52 @@ else
     }
 
     .user-message .message-content {
-        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
     }
 
     .message-text {
         background: #f5f5f5;
         padding: 0.75rem 1rem;
-        border-radius: 12px;
+        border-radius: 16px;
         display: inline-block;
         text-align: left;
         white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.5;
+        max-width: 100%;
     }
 
     .user-message .message-text {
-        background: var(--primary-orange, #D97706);
+        background: #D97706;
         color: white;
+        border-radius: 16px 16px 4px 16px;
+    }
+
+    .assistant-message .message-text {
+        border-radius: 16px 16px 16px 4px;
     }
 
     .message-time {
         font-size: 0.7rem;
         color: #999;
-        margin-top: 0.25rem;
+        margin-top: 0.375rem;
     }
 
     .typing-indicator {
         display: flex;
         gap: 4px;
-        padding: 0.75rem 1rem;
+        padding: 0.875rem 1rem;
         background: #f5f5f5;
-        border-radius: 12px;
+        border-radius: 16px;
         width: fit-content;
     }
 
     .typing-indicator span {
         width: 8px;
         height: 8px;
-        background: #999;
+        background: #bbb;
         border-radius: 50%;
         animation: bounce 1.4s infinite ease-in-out both;
     }
@@ -376,29 +506,54 @@ else
     }
 
     .chat-input-area {
-        padding: 1rem;
+        padding: 1rem 1.5rem;
         border-top: 1px solid #e5e5e5;
+        background: #fff;
     }
 
     .input-container {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        align-items: flex-end;
     }
 
     .input-container textarea {
+        flex: 1;
         resize: none;
-        border-radius: 20px;
-        padding: 0.5rem 1rem;
+        border-radius: 24px;
+        padding: 0.75rem 1.25rem;
+        border: 1px solid #e5e5e5;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        max-height: 120px;
+    }
+
+    .input-container textarea:focus {
+        outline: none;
+        border-color: #D97706;
+        box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1);
     }
 
     .send-btn {
         border-radius: 50%;
-        width: 42px;
-        height: 42px;
+        width: 44px;
+        height: 44px;
         padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
+        background: #D97706;
+        border: none;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .send-btn:hover:not(:disabled) {
+        background: #b45309;
+    }
+
+    .send-btn:disabled {
+        background: #ccc;
     }
 
     .mobile-sidebar-overlay {
@@ -416,6 +571,84 @@ else
         width: 280px;
         background: white;
     }
+
+    .contact-us-btn {
+        font-size: 0.75rem;
+        color: #999;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .contact-us-btn:hover {
+        color: #D97706;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .escalation-modal {
+        background: white;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header-custom {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e5e5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fafafa;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer-custom {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e5e5e5;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        background: #d4edda;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .chat-container {
+            height: calc(100vh - 80px);
+            border-radius: 0;
+        }
+
+        .message-content {
+            max-width: 85%;
+        }
+    }
 </style>
 
 @code {
@@ -432,6 +665,17 @@ else
     private bool isLoadingConversations = true;
     private bool showMobileSidebar = false;
     private bool shouldPreventDefault = false;
+
+    // Escalation modal state
+    private bool showEscalationModal = false;
+    private bool isSubmittingEscalation = false;
+    private bool escalationSubmitted = false;
+    private string escalationName = "";
+    private string escalationEmail = "";
+    private string escalationQuestion = "";
+    private string escalationContext = "";
+    private string? escalationError = null;
+    private MessageDto? escalationMessage = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -552,5 +796,75 @@ else
     private void ToggleMobileSidebar()
     {
         showMobileSidebar = !showMobileSidebar;
+    }
+
+    private void OpenEscalationModal(MessageDto message)
+    {
+        escalationMessage = message;
+        escalationName = "";
+        escalationEmail = "";
+        escalationQuestion = "";
+        escalationContext = "";
+        escalationError = null;
+        escalationSubmitted = false;
+        showEscalationModal = true;
+    }
+
+    private void CloseEscalationModal()
+    {
+        showEscalationModal = false;
+        escalationMessage = null;
+        escalationSubmitted = false;
+    }
+
+    private async Task SubmitEscalation()
+    {
+        if (string.IsNullOrWhiteSpace(escalationName) ||
+            string.IsNullOrWhiteSpace(escalationEmail) ||
+            string.IsNullOrWhiteSpace(escalationQuestion))
+        {
+            escalationError = "Please fill in all required fields.";
+            return;
+        }
+
+        if (!currentConversationId.HasValue)
+        {
+            escalationError = "No active conversation to escalate.";
+            return;
+        }
+
+        isSubmittingEscalation = true;
+        escalationError = null;
+
+        try
+        {
+            var request = new CreateEscalationRequest(
+                currentConversationId.Value,
+                null, // MessageId - we're not tracking message IDs client-side
+                escalationEmail.Trim(),
+                escalationName.Trim(),
+                escalationQuestion.Trim(),
+                string.IsNullOrWhiteSpace(escalationContext) ? null : escalationContext.Trim()
+            );
+
+            var response = await ChatSvc.CreateEscalationAsync(request);
+
+            if (response != null)
+            {
+                escalationSubmitted = true;
+            }
+            else
+            {
+                escalationError = "Failed to submit your request. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            escalationError = "An error occurred. Please try again.";
+        }
+        finally
+        {
+            isSubmittingEscalation = false;
+        }
     }
 }

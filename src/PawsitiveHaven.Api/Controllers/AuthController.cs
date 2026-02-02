@@ -27,13 +27,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest request)
+    public ActionResult<AuthResponse> Register([FromBody] RegisterRequest request)
     {
-        var response = await _authService.RegisterAsync(request);
-
-        if (!response.Success)
-            return BadRequest(response);
-
-        return Ok(response);
+        // Public registration is disabled - accounts are created by administrators only
+        return StatusCode(403, new AuthResponse(
+            false, null, null, null, null,
+            "Public registration is disabled. Please contact an administrator to create an account."
+        ));
     }
 }

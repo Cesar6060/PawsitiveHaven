@@ -64,6 +64,8 @@ CREATE TABLE pet_photos (
 -- Create indexes for pet photos
 CREATE INDEX idx_pet_photos_pet_id ON pet_photos(pet_id);
 CREATE INDEX idx_pet_photos_is_primary ON pet_photos(pet_id, is_primary);
+-- Enforce only one primary photo per pet at the database level
+CREATE UNIQUE INDEX idx_pet_photos_single_primary ON pet_photos(pet_id) WHERE is_primary = true;
 
 -- Medical records table (for tracking vaccinations, vet visits, medications, surgeries)
 CREATE TABLE medical_records (

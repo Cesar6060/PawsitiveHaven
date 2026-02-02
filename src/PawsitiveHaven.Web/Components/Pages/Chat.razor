@@ -145,8 +145,7 @@ else
                 <form @onsubmit="SendMessage" @onsubmit:preventDefault>
                     <div class="input-container">
                         <textarea id="chat-input" class="form-control" rows="1" placeholder="Type your message..."
-                            @bind="inputMessage" @bind:event="oninput"
-                            oninput="this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,150)+'px';"
+                            @bind="inputMessage" @bind:event="oninput" @bind:after="AutoResizeTextarea"
                             @onkeydown="HandleKeyDown" @onkeydown:preventDefault="shouldPreventDefault"
                             disabled="@isLoading"></textarea>
                         <button type="submit" class="btn btn-primary send-btn"
@@ -900,6 +899,11 @@ else
     {
         // Set preventDefault for Enter without Shift to prevent newline in textarea
         shouldPreventDefault = e.Key == "Enter" && !e.ShiftKey;
+    }
+
+    private async Task AutoResizeTextarea()
+    {
+        try { await JS.InvokeVoidAsync("chatHelpers.autoResizeTextarea", "#chat-input"); } catch { }
     }
 
     private async Task SendMessage()

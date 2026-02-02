@@ -1,7 +1,148 @@
-﻿@page "/"
+@page "/"
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Pawsitive Haven - Pet Rescue</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (AuthState.IsAuthenticated)
+{
+    <div class="text-center py-4">
+        <h2>Welcome back, @AuthState.Username!</h2>
+        <p class="text-muted">What would you like to do today?</p>
 
-Welcome to your new app.
+        <div class="row g-4 mt-4 justify-content-center">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-house-heart fs-1 text-primary mb-3"></i>
+                        <h5 class="card-title">Dashboard</h5>
+                        <p class="card-text text-muted">View your pets and appointments</p>
+                        <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-chat-heart fs-1 text-success mb-3"></i>
+                        <h5 class="card-title">AI Chat</h5>
+                        <p class="card-text text-muted">Get help from our AI assistant</p>
+                        <a href="/chat" class="btn btn-success">Start Chat</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-book fs-1 text-info mb-3"></i>
+                        <h5 class="card-title">Resources</h5>
+                        <p class="card-text text-muted">Foster guides and pet care tips</p>
+                        <a href="/resources" class="btn btn-info text-white">View Resources</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="landing-page">
+        <div class="hero-section text-center py-5">
+            <div class="container">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-heart-fill text-danger"></i> Pawsitive Haven
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Connecting loving fosters with pets in need. Join our community and make a difference.
+                </p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="/login" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </a>
+                    <a href="/register" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="bi bi-person-plus me-2"></i>Register
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="features-section py-5 bg-light">
+            <div class="container">
+                <h2 class="text-center mb-5">What We Offer</h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-robot fs-1 text-primary"></i>
+                            </div>
+                            <h5>AI Assistant</h5>
+                            <p class="text-muted">Get instant answers about pet care, adoption, and fostering from our AI-powered chatbot.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-calendar-check fs-1 text-success"></i>
+                            </div>
+                            <h5>Appointment Tracking</h5>
+                            <p class="text-muted">Keep track of vet visits, vaccinations, and important dates for your foster pets.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-file-text fs-1 text-info"></i>
+                            </div>
+                            <h5>Pet Bio Generator</h5>
+                            <p class="text-muted">Create compelling adoption bios for your foster pets with AI assistance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section text-center py-5">
+            <div class="container">
+                <h3 class="mb-3">Ready to make a difference?</h3>
+                <p class="text-muted mb-4">Join Pawsitive Haven and help pets find their forever homes.</p>
+                <a href="/register" class="btn btn-primary btn-lg">Get Started Today</a>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .landing-page {
+        margin: -1rem;
+    }
+
+    .hero-section {
+        background: linear-gradient(135deg, #FFF7ED 0%, #FDBA74 100%);
+        padding: 4rem 1rem;
+    }
+
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .cta-section {
+        background: #f8f9fa;
+    }
+
+    .card {
+        border: none;
+        transition: transform 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+</style>

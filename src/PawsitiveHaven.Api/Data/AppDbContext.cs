@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<Faq> Faqs => Set<Faq>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+    public DbSet<Escalation> Escalations => Set<Escalation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +111,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(200);
+            entity.Property(e => e.OpenAiThreadId).HasColumnName("openai_thread_id").HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
 
@@ -134,6 +136,41 @@ public class AppDbContext : DbContext
                 .WithMany(c => c.Messages)
                 .HasForeignKey(e => e.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Escalation configuration
+        modelBuilder.Entity<Escalation>(entity =>
+        {
+            entity.ToTable("escalations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ConversationId).HasColumnName("conversation_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.MessageId).HasColumnName("message_id");
+            entity.Property(e => e.UserEmail).HasColumnName("user_email").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.UserName).HasColumnName("user_name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.UserQuestion).HasColumnName("user_question").IsRequired();
+            entity.Property(e => e.AdditionalContext).HasColumnName("additional_context");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).HasDefaultValue("Pending");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.EmailSentAt).HasColumnName("email_sent_at");
+            entity.Property(e => e.ResolvedAt).HasColumnName("resolved_at");
+            entity.Property(e => e.StaffNotes).HasColumnName("staff_notes");
+
+            entity.HasOne(e => e.Conversation)
+                .WithMany(c => c.Escalations)
+                .HasForeignKey(e => e.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.Escalations)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Message)
+                .WithMany()
+                .HasForeignKey(e => e.MessageId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

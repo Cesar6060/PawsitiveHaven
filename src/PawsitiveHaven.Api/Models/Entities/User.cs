@@ -15,4 +15,5 @@ public class User
     public ICollection<Pet> Pets { get; set; } = new List<Pet>();
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();
+    public ICollection<Escalation> Escalations { get; set; } = new List<Escalation>();
 }

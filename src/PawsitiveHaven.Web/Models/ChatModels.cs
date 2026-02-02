@@ -40,3 +40,26 @@ public record PetBioResponse(
     string? Bio,
     string? Error
 );
+
+public record CreateEscalationRequest(
+    int ConversationId,
+    int? MessageId,
+    string UserEmail,
+    string UserName,
+    string UserQuestion,
+    string? AdditionalContext
+);
+
+public record EscalationResponse(
+    int Id,
+    int ConversationId,
+    string UserEmail,
+    string UserName,
+    string UserQuestion,
+    string? AdditionalContext,
+    string Status,
+    DateTime CreatedAt,
+    DateTime? EmailSentAt,
+    DateTime? ResolvedAt,
+    string? StaffNotes
+);

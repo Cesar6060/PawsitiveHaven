@@ -80,6 +80,7 @@ CREATE TABLE conversations (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(200),
+    openai_thread_id VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -98,6 +99,28 @@ CREATE TABLE conversation_messages (
 
 -- Create index for conversation messages
 CREATE INDEX idx_conversation_messages_conversation_id ON conversation_messages(conversation_id);
+
+-- Escalations table (for human support requests)
+CREATE TABLE escalations (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message_id INTEGER REFERENCES conversation_messages(id) ON DELETE SET NULL,
+    user_email VARCHAR(255) NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    user_question TEXT NOT NULL,
+    additional_context TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    email_sent_at TIMESTAMP WITH TIME ZONE,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    staff_notes TEXT
+);
+
+-- Create indexes for escalations
+CREATE INDEX idx_escalations_status ON escalations(status);
+CREATE INDEX idx_escalations_user_id ON escalations(user_id);
+CREATE INDEX idx_escalations_conversation_id ON escalations(conversation_id);
 
 -- Insert default admin user (password: Test12345)
 -- BCrypt hash for 'Test12345' with work factor 12

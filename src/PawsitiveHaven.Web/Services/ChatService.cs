@@ -39,4 +39,15 @@ public class ChatService
         var response = await _apiClient.PostAsync<PetBioRequest, PetBioResponse>("api/ai/generate-bio", request);
         return response ?? new PetBioResponse(false, null, "Connection error");
     }
+
+    public async Task<EscalationResponse?> CreateEscalationAsync(CreateEscalationRequest request)
+    {
+        return await _apiClient.PostAsync<CreateEscalationRequest, EscalationResponse>("api/escalations", request);
+    }
+
+    public async Task<List<EscalationResponse>> GetMyEscalationsAsync()
+    {
+        var escalations = await _apiClient.GetAsync<List<EscalationResponse>>("api/escalations/my");
+        return escalations ?? new List<EscalationResponse>();
+    }
 }

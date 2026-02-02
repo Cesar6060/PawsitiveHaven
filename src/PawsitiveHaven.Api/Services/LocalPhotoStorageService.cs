@@ -31,7 +31,7 @@ public class LocalPhotoStorageService : IPhotoStorageService
             }
 
             var fullPath = Path.Combine(uploadsPath, uniqueFileName);
-            var relativePath = $"{UploadsFolder}/{uniqueFileName}";
+            var relativePath = Path.Combine(UploadsFolder, uniqueFileName).Replace("\\", "/");
 
             await using var fileStreamOutput = new FileStream(fullPath, FileMode.Create);
             await fileStream.CopyToAsync(fileStreamOutput);

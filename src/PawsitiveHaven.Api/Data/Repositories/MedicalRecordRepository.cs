@@ -26,7 +26,7 @@ public class MedicalRecordRepository : Repository<MedicalRecord>, IMedicalRecord
 
         return await _dbSet
             .Include(m => m.Pet)
-            .Where(m => m.Pet.UserId == userId &&
+            .Where(m => (m.Pet.UserId == userId || m.Pet.FosterId == userId) &&
                         m.NextDueDate != null &&
                         m.NextDueDate >= today &&
                         m.NextDueDate <= futureDate)

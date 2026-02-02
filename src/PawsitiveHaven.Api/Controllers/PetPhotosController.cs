@@ -33,7 +33,9 @@ public class PetPhotosController : ControllerBase
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.Parse(userIdClaim ?? "0");
+        if (!int.TryParse(userIdClaim, out var userId) || userId == 0)
+            throw new UnauthorizedAccessException("Invalid user authentication");
+        return userId;
     }
 
     private async Task<bool> CanAccessPet(int petId, int userId)
@@ -124,14 +126,15 @@ public class PetPhotosController : ControllerBase
 
         try
         {
-            // Delete file from storage
-            await _storageService.DeletePhotoAsync(photo.FilePath);
-
             // If this was the primary photo, set another one as primary
             var wasPrimary = photo.IsPrimary;
+            var filePath = photo.FilePath;
 
-            // Delete from database
+            // Delete from database first (so we don't orphan the file if DB fails)
             await _photoRepository.DeleteAsync(photo);
+
+            // Then delete file from storage
+            await _storageService.DeletePhotoAsync(filePath);
 
             if (wasPrimary)
             {

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace PawsitiveHaven.Api.Services;
@@ -14,6 +15,9 @@ public class RateLimitService : IRateLimitService
 {
     private readonly IMemoryCache _cache;
     private readonly ILogger<RateLimitService> _logger;
+
+    // Lock objects for thread-safe counter operations (per-key locking)
+    private readonly ConcurrentDictionary<string, object> _locks = new();
 
     // Rate limit configuration
     private const int RequestsPerMinute = 20;
@@ -42,13 +46,9 @@ public class RateLimitService : IRateLimitService
             return RateLimitResult.Banned(retryAfter > TimeSpan.Zero ? retryAfter : TimeSpan.FromMinutes(1));
         }
 
-        // Check per-minute limit
+        // Check per-minute limit (thread-safe read)
         var minuteKey = $"ratelimit:minute:{userId}";
-        var minuteCount = _cache.GetOrCreate(minuteKey, entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            return 0;
-        });
+        var minuteCount = GetCounter(minuteKey);
 
         if (minuteCount >= RequestsPerMinute)
         {
@@ -58,11 +58,7 @@ public class RateLimitService : IRateLimitService
 
         // Check per-hour limit
         var hourKey = $"ratelimit:hour:{userId}";
-        var hourCount = _cache.GetOrCreate(hourKey, entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
-            return 0;
-        });
+        var hourCount = GetCounter(hourKey);
 
         if (hourCount >= RequestsPerHour)
         {
@@ -72,11 +68,7 @@ public class RateLimitService : IRateLimitService
 
         // Check per-day limit
         var dayKey = $"ratelimit:day:{userId}";
-        var dayCount = _cache.GetOrCreate(dayKey, entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
-            return 0;
-        });
+        var dayCount = GetCounter(dayKey);
 
         if (dayCount >= RequestsPerDay)
         {
@@ -89,7 +81,7 @@ public class RateLimitService : IRateLimitService
 
     public void RecordRequest(int userId)
     {
-        // Increment counters
+        // Increment counters (thread-safe)
         IncrementCounter($"ratelimit:minute:{userId}", TimeSpan.FromMinutes(1));
         IncrementCounter($"ratelimit:hour:{userId}", TimeSpan.FromHours(1));
         IncrementCounter($"ratelimit:day:{userId}", TimeSpan.FromDays(1));
@@ -127,18 +119,34 @@ public class RateLimitService : IRateLimitService
         );
     }
 
+    /// <summary>
+    /// Gets the current counter value (thread-safe read)
+    /// </summary>
+    private int GetCounter(string key)
+    {
+        return _cache.Get<int?>(key) ?? 0;
+    }
+
+    /// <summary>
+    /// Atomically increments a counter (thread-safe with per-key locking)
+    /// </summary>
     private int IncrementCounter(string key, TimeSpan duration)
     {
-        var count = _cache.GetOrCreate(key, entry =>
+        // Get or create a lock object for this specific key
+        var lockObj = _locks.GetOrAdd(key, _ => new object());
+
+        lock (lockObj)
         {
-            entry.AbsoluteExpirationRelativeToNow = duration;
-            return 0;
-        });
+            var count = _cache.Get<int?>(key) ?? 0;
+            count++;
 
-        count++;
-        _cache.Set(key, count, duration);
+            _cache.Set(key, count, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = duration
+            });
 
-        return count;
+            return count;
+        }
     }
 }
 

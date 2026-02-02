@@ -902,24 +902,6 @@ else
         shouldPreventDefault = e.Key == "Enter" && !e.ShiftKey;
     }
 
-    private async Task OnTextareaInput()
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("chatHelpers.autoResizeTextarea", "#chat-input");
-        }
-        catch { }
-    }
-
-    private async Task ResetTextareaHeight()
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("chatHelpers.resetTextareaHeight", "#chat-input");
-        }
-        catch { }
-    }
-
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(inputMessage) || isLoading)
@@ -928,7 +910,9 @@ else
         var userMessage = inputMessage.Trim();
         inputMessage = "";
         isLoading = true;
-        await ResetTextareaHeight();
+
+        // Reset textarea height after clearing
+        try { await JS.InvokeVoidAsync("chatHelpers.resetTextareaHeight", "#chat-input"); } catch { }
 
         // Add user message to UI immediately
         messages.Add(new MessageDto("user", userMessage, DateTime.Now));

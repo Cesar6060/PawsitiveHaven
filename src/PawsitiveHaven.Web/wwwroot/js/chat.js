@@ -15,14 +15,6 @@ window.chatHelpers = {
         }
     },
 
-    autoResizeTextarea: function (selector) {
-        const textarea = document.querySelector(selector);
-        if (textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
-        }
-    },
-
     resetTextareaHeight: function (selector) {
         const textarea = document.querySelector(selector);
         if (textarea) {

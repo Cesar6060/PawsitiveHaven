@@ -92,12 +92,10 @@
 </nav>
 
 @code {
-    private async Task Logout()
+    private void Logout()
     {
-        await InvokeAsync(() =>
-        {
-            Auth.Logout();
-            Navigation.NavigateTo("/login", forceLoad: true);
-        });
+        // Navigate with forceLoad to do a full page reload, which clears all state
+        // Don't call Auth.Logout() here as it triggers a dispatcher error
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

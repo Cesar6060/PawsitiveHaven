@@ -1,125 +1,203 @@
-# Pawsitive Haven Pet Rescue
+# Pawsitive Haven
 
-A comprehensive pet management system with integrated AI capabilities for pet rescue organizations.
+**A full-stack pet rescue management platform with AI-powered assistance**
+
+![.NET](https://img.shields.io/badge/.NET%209-512BD4?style=flat&logo=dotnet&logoColor=white)
+![Blazor](https://img.shields.io/badge/Blazor-512BD4?style=flat&logo=blazor&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat&logo=openai&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+
+---
+
+## Overview
+
+Pawsitive Haven is a comprehensive management system designed for pet rescue organizations. It streamlines the adoption process, supports foster families, and provides AI-powered assistance to answer common questions about pet care, fostering, and adoption.
+
+Built with a security-first approach, the platform implements defense-in-depth protections for its AI chatbot, including prompt injection detection, rate limiting, and output filtering.
+
+---
+
+## Key Features
+
+### For Foster Families & Adopters
+- **AI Chat Assistant** - Get instant answers about pet care, fostering guidelines, and adoption processes
+- **Pet Profiles** - Track pets with detailed information and AI-generated bios
+- **Appointment Management** - Schedule and manage vet visits, vaccinations, and check-ups
+- **Resource Library** - Access comprehensive guides for first-time fosters and adopters
+
+### For Administrators
+- **User Management** - Full CRUD operations for managing platform users
+- **FAQ Management** - Maintain the knowledge base that powers the AI assistant
+- **Role-Based Access** - Secure admin-only sections with JWT authentication
+
+### Security-Hardened AI
+- **Prompt Injection Detection** - 30+ pattern matching rules to prevent manipulation
+- **Rate Limiting** - Tiered limits (per-minute, hourly, daily) with automatic bans
+- **Input Sanitization** - Unicode normalization, control character removal
+- **Output Filtering** - Prevents system prompt leakage
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Blazor Server Frontend                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   Pages     │  │  Services   │  │   Models    │         │
+│  │  (Razor)    │  │ (API calls) │  │   (DTOs)    │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ REST API
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                ASP.NET Core 9 Web API                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ Controllers │  │  Services   │  │Repositories │         │
+│  │  (REST)     │  │  (Business) │  │   (Data)    │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│         │                │                │                 │
+│         ▼                ▼                ▼                 │
+│  ┌─────────────────────────────────────────────┐           │
+│  │           Security Layer                     │           │
+│  │  • ChatSecurityService (injection detection) │           │
+│  │  • RateLimitService (request throttling)     │           │
+│  │  • JWT Authentication                        │           │
+│  └─────────────────────────────────────────────┘           │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+            ┌─────────────┴─────────────┐
+            ▼                           ▼
+┌───────────────────┐       ┌───────────────────┐
+│    PostgreSQL     │       │    OpenAI API     │
+│   pawsitive_haven │       │   GPT-4o-mini     │
+└───────────────────┘       └───────────────────┘
+```
+
+---
 
 ## Tech Stack
 
-- **.NET 9** - Latest .NET framework
-- **Blazor Server** - Frontend with no prerendering for simple auth state
-- **ASP.NET Core Web API** - Backend REST API
-- **PostgreSQL 17** - Database
-- **Entity Framework Core 9** - ORM with repository pattern
-- **JWT Authentication** - Secure token-based auth
-- **Bootstrap 5** - UI framework
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Blazor Server, Razor Components |
+| **Backend** | ASP.NET Core 9 Web API |
+| **Database** | PostgreSQL 17 with Entity Framework Core |
+| **AI** | OpenAI GPT-4o-mini |
+| **Authentication** | JWT with BCrypt password hashing |
+| **Containerization** | Docker & Docker Compose |
+| **Security** | Custom prompt injection detection, rate limiting |
+
+---
+
+## Security Implementation
+
+The AI chatbot implements multiple layers of defense based on OWASP LLM Top 10 guidelines:
+
+| Layer | Protection |
+|-------|------------|
+| **Input Validation** | Message length limits, character filtering |
+| **Injection Detection** | Regex patterns for role manipulation, jailbreak attempts |
+| **Rate Limiting** | 20/min, 100/hr, 500/day with automatic 24h bans |
+| **System Prompt** | Hardened with strict boundaries and manipulation responses |
+| **Output Filtering** | Detects and blocks system prompt leakage |
+
+See [CHATBOT_SECURITY.md](docs/CHATBOT_SECURITY.md) for the complete threat model and security documentation.
+
+---
 
 ## Project Structure
 
 ```
 PawsitiveHaven/
-├── docker-compose.yml          # PostgreSQL container
+├── src/
+│   ├── PawsitiveHaven.Api/        # Backend Web API
+│   │   ├── Controllers/           # REST endpoints
+│   │   ├── Services/              # Business logic + security
+│   │   ├── Data/Repositories/     # Data access layer
+│   │   └── Models/                # Entities and DTOs
+│   └── PawsitiveHaven.Web/        # Blazor Frontend
+│       ├── Components/Pages/      # UI pages
+│       ├── Services/              # API clients
+│       └── wwwroot/Assets/        # Knowledge base documents
 ├── database/
-│   └── init.sql               # Database schema
-└── src/
-    ├── PawsitiveHaven.Api/    # Backend API
-    │   ├── Controllers/       # REST endpoints
-    │   ├── Data/              # DbContext & Repositories
-    │   ├── Models/            # Entities & DTOs
-    │   ├── Services/          # Business logic
-    │   └── Extensions/        # DI extensions
-    └── PawsitiveHaven.Web/    # Frontend
-        ├── Components/        # Blazor components
-        ├── Services/          # API clients
-        └── Models/            # Client models
+│   └── init.sql                   # Schema + seed data (26 FAQs)
+├── docs/
+│   ├── CHATBOT_SECURITY.md        # Security threat model
+│   ├── CHATBOT_IMPLEMENTATION_PLAN.md
+│   └── KNOWLEDGE_BASE.md          # AI knowledge base catalog
+└── docker-compose.yml             # Development environment
 ```
 
-## Getting Started
-
-### Prerequisites
-
-- .NET 9 SDK
-- Docker & Docker Compose
-
-### Quick Start
-
-1. **Start PostgreSQL:**
-   ```bash
-   docker-compose up -d
-   ```
-
-2. **Run the Backend (Terminal 1):**
-   ```bash
-   cd src/PawsitiveHaven.Api
-   dotnet run
-   ```
-   API runs at: http://localhost:5052
-
-3. **Run the Frontend (Terminal 2):**
-   ```bash
-   cd src/PawsitiveHaven.Web
-   dotnet run
-   ```
-   Frontend runs at: http://localhost:5180
-
-### Default Users
-
-| Username | Password   | Role  |
-|----------|------------|-------|
-| admin    | Test12345  | Admin |
-| demo     | Test12345  | User  |
+---
 
 ## API Endpoints
 
-| Endpoint                     | Method | Auth     | Description          |
-|------------------------------|--------|----------|----------------------|
-| `/api/auth/login`            | POST   | No       | User login           |
-| `/api/auth/register`         | POST   | No       | User registration    |
-| `/api/pets`                  | GET    | Required | Get user's pets      |
-| `/api/pets`                  | POST   | Required | Create pet           |
-| `/api/pets/{id}`             | PUT    | Required | Update pet           |
-| `/api/pets/{id}`             | DELETE | Required | Delete pet           |
-| `/api/appointments`          | GET    | Required | Get appointments     |
-| `/api/appointments/upcoming` | GET    | Required | Get upcoming tasks   |
-| `/api/faqs`                  | GET    | No       | Get active FAQs      |
-| `/health`                    | GET    | No       | Health check         |
+| Category | Endpoints | Auth |
+|----------|-----------|------|
+| **Authentication** | `POST /api/auth/login`, `/register` | Public |
+| **Pets** | `GET/POST/PUT/DELETE /api/pets` | JWT |
+| **Appointments** | `GET/POST/PUT/DELETE /api/appointments` | JWT |
+| **AI Chat** | `POST /api/ai/chat`, `GET /api/ai/conversations` | JWT |
+| **FAQs** | `GET /api/faqs`, admin CRUD | Public / Admin |
+| **Admin** | `GET/POST/PUT/DELETE /api/admin/users` | Admin |
 
-## Environment Variables
+---
 
-Create a `.env` file in the project root:
+## Knowledge Base
 
-```bash
-DB_USER=pawsitive
-DB_PASSWORD=your_secure_password
-JWT_SECRET=your_32_char_minimum_secret_key
-OPENAI_API_KEY=sk-your-openai-api-key
-```
+The AI assistant is powered by a comprehensive knowledge base:
+
+- **26 FAQ entries** covering adoption, fostering, medical care, and behavior
+- **4 guide documents**: First-time foster guide, adoption process, foster care checklist, organizational contacts
+- **Emergency information** with quick-reference contact numbers
+
+---
 
 ## Development
 
-### Build Both Projects
-```bash
-dotnet build
-```
+### Prerequisites
+- .NET 9 SDK
+- Docker & Docker Compose
+- OpenAI API key
 
-### Run Tests
+### Quick Start
+
 ```bash
+# Start PostgreSQL
+docker-compose up -d
+
+# Run backend (terminal 1)
 cd src/PawsitiveHaven.Api
-dotnet test
+dotnet run
+
+# Run frontend (terminal 2)
+cd src/PawsitiveHaven.Web
+dotnet run
 ```
 
-## Features
+### Production
 
-- [x] User authentication (JWT)
-- [x] Pet profile management
-- [x] Appointment/task tracking
-- [x] FAQ system
-- [ ] AI chat integration
-- [ ] Pet bio generator
-- [ ] Admin dashboard
+```bash
+docker-compose -f docker-compose.prod.yml up --build -d
+```
 
-## Architecture Decisions
+---
 
-1. **No Prerendering** - Simplifies auth state management
-2. **Repository Pattern** - Clean data access layer
-3. **Proper DI** - All services injected, no `new` in controllers
-4. **PostgreSQL from Day 1** - No migration headaches
-5. **Docker-first** - Consistent development environment
+## Documentation
+
+- [Technical Documentation](DOCUMENTATION.md) - Detailed architecture and API reference
+- [Chatbot Security](docs/CHATBOT_SECURITY.md) - Threat model and security controls
+- [Implementation Plan](docs/CHATBOT_IMPLEMENTATION_PLAN.md) - Development roadmap
+- [Knowledge Base](docs/KNOWLEDGE_BASE.md) - AI content catalog
+
+---
+
+## License
+
+This project is part of a portfolio demonstration.
+
+---
+
+*Built with ASP.NET Core 9, Blazor, and OpenAI*

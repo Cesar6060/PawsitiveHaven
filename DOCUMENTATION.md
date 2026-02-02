@@ -131,6 +131,17 @@ PawsitiveHaven/
 - Resources page with pet care guides
 - Production Docker setup with multi-stage builds
 
+### Phase 7: Security Hardening
+- ChatSecurityService with 30+ prompt injection detection patterns
+- RateLimitService with tiered limits (20/min, 100/hr, 500/day)
+- Thread-safe rate limiting with per-key locking
+- Automatic 24-hour bans after 5 violations
+- Hardened system prompt with strict security boundaries
+- Output filtering to prevent system prompt leakage
+- Input sanitization (Unicode normalization, control character removal)
+- Comprehensive knowledge base (26 FAQs, 4 guide documents)
+- Security documentation (threat model, STRIDE analysis, OWASP mapping)
+
 ---
 
 ## API Endpoints
@@ -263,10 +274,19 @@ After running `init.sql`, these accounts are available:
 | #2 | Phase 4: Core Features | Merged |
 | #3 | Phase 5: AI Integration | Merged |
 | #5 | Phase 6: Admin + Docker | Merged |
+| #6 | Bug fixes (async/logging) | Merged |
+| #7 | Phase 7: Security Hardening + Knowledge Base | Merged |
 
 ---
 
 ## What's Next
+
+### Chatbot Enhancements (Phase 2-4)
+
+1. **Streaming Responses** - Real-time token streaming with SSE
+2. **Auto-Generated Titles** - Meaningful conversation titles from content
+3. **Message Feedback** - Thumbs up/down reactions for quality tracking
+4. **Analytics Dashboard** - Admin view of chatbot usage and security events
 
 ### Immediate (Before Production)
 
@@ -337,12 +357,7 @@ After running `init.sql`, these accounts are available:
    - Health check dashboard
    - Log aggregation (ELK/Seq)
 
-3. **Security Hardening**
-   - Rate limiting on all endpoints
-   - CORS configuration
-   - Security headers (CSP, HSTS)
-
-4. **Performance**
+3. **Performance**
    - Redis caching
    - Response compression
    - Database query optimization
@@ -395,11 +410,12 @@ You are taking over development of Pawsitive Haven, a pet management system with
 - Auth: JWT + BCrypt (work factor 12)
 
 ## Current State
-All 6 phases are COMPLETE and merged to main:
+All 7 phases are COMPLETE and merged to main:
 - Phase 1-3: Project setup, Docker, PostgreSQL, Auth, Frontend foundation
 - Phase 4: Pet profiles, appointments/tasks management
 - Phase 5: AI chat with conversation history, pet bio generator, FAQ integration
 - Phase 6: Admin dashboard (user/FAQ management), Settings, Resources, Production Docker
+- Phase 7: Security hardening (ChatSecurityService, RateLimitService, hardened prompts, knowledge base)
 
 ## How to Run
 1. Start database: `docker-compose up -d`
@@ -431,11 +447,16 @@ All 6 phases are COMPLETE and merged to main:
 
 ## Suggested Next Tasks (in priority order)
 1. Test production Docker build: `docker-compose -f docker-compose.prod.yml up --build`
-2. Add unit tests for critical services (AuthService, PetService)
-3. Add Swagger documentation to API
-4. Implement pet photo upload feature
-5. Add email notifications (password reset, appointment reminders)
-6. Implement dark mode toggle
+2. Implement streaming chat responses (Phase 2 of chatbot roadmap)
+3. Add unit tests for critical services (AuthService, ChatSecurityService)
+4. Add Swagger documentation to API
+5. Implement pet photo upload feature
+6. Add email notifications (password reset, appointment reminders)
+
+## Security Documentation
+- docs/CHATBOT_SECURITY.md - Threat model and OWASP LLM mapping
+- docs/CHATBOT_IMPLEMENTATION_PLAN.md - Phased roadmap
+- docs/KNOWLEDGE_BASE.md - AI content catalog
 
 ## Git Workflow
 1. Create feature branch from main

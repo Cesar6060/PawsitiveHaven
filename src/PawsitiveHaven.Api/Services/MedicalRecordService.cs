@@ -22,9 +22,9 @@ public class MedicalRecordService : IMedicalRecordService
 
     public async Task<IEnumerable<MedicalRecordDto>> GetPetMedicalRecordsAsync(int petId, int userId)
     {
-        // Verify user owns the pet
+        // Verify user owns the pet or is the assigned foster
         var pet = await _petRepository.GetByIdAsync(petId);
-        if (pet == null || pet.UserId != userId)
+        if (pet == null || (pet.UserId != userId && pet.FosterId != userId))
             return Enumerable.Empty<MedicalRecordDto>();
 
         var records = await _medicalRecordRepository.GetByPetIdAsync(petId);
@@ -34,7 +34,7 @@ public class MedicalRecordService : IMedicalRecordService
     public async Task<MedicalRecordDto?> GetMedicalRecordByIdAsync(int id, int userId)
     {
         var record = await _medicalRecordRepository.GetByIdWithDetailsAsync(id);
-        if (record == null || record.Pet.UserId != userId)
+        if (record == null || (record.Pet.UserId != userId && record.Pet.FosterId != userId))
             return null;
 
         return MapToDto(record);
@@ -44,11 +44,11 @@ public class MedicalRecordService : IMedicalRecordService
     {
         try
         {
-            // Verify user owns the pet
+            // Verify user owns the pet or is the assigned foster
             var pet = await _petRepository.GetByIdAsync(petId);
-            if (pet == null || pet.UserId != userId)
+            if (pet == null || (pet.UserId != userId && pet.FosterId != userId))
             {
-                _logger.LogWarning("User {UserId} attempted to add medical record to pet {PetId} they don't own", userId, petId);
+                _logger.LogWarning("User {UserId} attempted to add medical record to pet {PetId} they don't have access to", userId, petId);
                 return null;
             }
 
@@ -94,7 +94,7 @@ public class MedicalRecordService : IMedicalRecordService
         try
         {
             var record = await _medicalRecordRepository.GetByIdWithDetailsAsync(id);
-            if (record == null || record.PetId != petId || record.Pet.UserId != userId)
+            if (record == null || record.PetId != petId || (record.Pet.UserId != userId && record.Pet.FosterId != userId))
             {
                 _logger.LogWarning("User {UserId} attempted to update medical record {RecordId} they don't have access to", userId, id);
                 return null;
@@ -138,7 +138,7 @@ public class MedicalRecordService : IMedicalRecordService
         try
         {
             var record = await _medicalRecordRepository.GetByIdWithDetailsAsync(id);
-            if (record == null || record.PetId != petId || record.Pet.UserId != userId)
+            if (record == null || record.PetId != petId || (record.Pet.UserId != userId && record.Pet.FosterId != userId))
             {
                 _logger.LogWarning("User {UserId} attempted to delete medical record {RecordId} they don't have access to", userId, id);
                 return false;

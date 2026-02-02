@@ -96,21 +96,21 @@ else
                 <li class="nav-item">
                     <button class="nav-link @(currentFilter == "all" ? "active" : "")"
                             style="@(currentFilter == "all" ? "color: #D97706; border-color: #D97706 #D97706 #fff;" : "")"
-                            @onclick="() => SetFilter(\"all\")">
+                            @onclick="@(() => SetFilter("all"))">
                         All Pets <span class="badge bg-secondary ms-1">@allPets.Count</span>
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link @(currentFilter == "unassigned" ? "active" : "")"
                             style="@(currentFilter == "unassigned" ? "color: #D97706; border-color: #D97706 #D97706 #fff;" : "")"
-                            @onclick="() => SetFilter(\"unassigned\")">
+                            @onclick="@(() => SetFilter("unassigned"))">
                         Unassigned <span class="badge bg-danger ms-1">@allPets.Count(p => !p.FosterId.HasValue)</span>
                     </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link @(currentFilter == "assigned" ? "active" : "")"
                             style="@(currentFilter == "assigned" ? "color: #D97706; border-color: #D97706 #D97706 #fff;" : "")"
-                            @onclick="() => SetFilter(\"assigned\")">
+                            @onclick="@(() => SetFilter("assigned"))">
                         Assigned <span class="badge bg-success ms-1">@allPets.Count(p => p.FosterId.HasValue)</span>
                     </button>
                 </li>

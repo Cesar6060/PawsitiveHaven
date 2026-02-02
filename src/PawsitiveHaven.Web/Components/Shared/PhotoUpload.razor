@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Components.Forms
+@inject PetPhotoService PhotoService
 
 <div class="photo-upload-container">
     <div class="photo-upload-dropzone @(isDragging ? "dragging" : "") @(isUploading ? "uploading" : "")"
@@ -174,8 +175,16 @@
         try
         {
             using var stream = file.OpenReadStream(MaxFileSize);
-            await OnPhotoUploaded.InvokeAsync(true);
-            successMessage = "Photo uploaded successfully!";
+            var result = await PhotoService.UploadPhotoAsync(PetId, stream, file.Name);
+            if (result != null && result.Success)
+            {
+                await OnPhotoUploaded.InvokeAsync(true);
+                successMessage = "Photo uploaded successfully!";
+            }
+            else
+            {
+                errorMessage = result?.Message ?? "Failed to upload photo. Please try again.";
+            }
         }
         catch (Exception ex)
         {

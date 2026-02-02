@@ -43,7 +43,10 @@ public class EmailService : IEmailService
         {
             var from = new EmailAddress(_config.FromEmail, _config.FromName);
             var to = new EmailAddress(_config.EscalationEmail, "Foster Support Team");
-            var subject = $"Support Request: {escalation.UserQuestion[..Math.Min(50, escalation.UserQuestion.Length)]}...";
+            var questionPreview = escalation.UserQuestion.Length > 50
+                ? escalation.UserQuestion[..50] + "..."
+                : escalation.UserQuestion;
+            var subject = $"Support Request: {questionPreview}";
 
             var htmlContent = BuildEscalationEmailHtml(escalation, conversationHistory);
             var plainTextContent = BuildEscalationEmailPlainText(escalation, conversationHistory);

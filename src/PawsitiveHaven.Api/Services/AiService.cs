@@ -49,7 +49,7 @@ public class AiService : IAiService
 
         _openAiClient = new OpenAIClient(apiKey);
         _assistantClient = _openAiClient.GetAssistantClient();
-        _chatClient = _openAiClient.GetChatClient("gpt-5-nano");
+        _chatClient = _openAiClient.GetChatClient("gpt-4o-mini");
     }
 
     public async Task<ChatResponse> ChatAsync(int userId, ChatRequest request)
@@ -201,9 +201,18 @@ public class AiService : IAiService
         var runResult = await _assistantClient.CreateRunAsync(threadId, _assistantConfig.AssistantId!, runOptions);
         var run = runResult.Value;
 
-        // Poll for completion
+        // Poll for completion with timeout (max 60 seconds)
+        var timeout = TimeSpan.FromSeconds(60);
+        var startTime = DateTime.UtcNow;
+
         while (run.Status == RunStatus.Queued || run.Status == RunStatus.InProgress)
         {
+            if (DateTime.UtcNow - startTime > timeout)
+            {
+                _logger.LogError("Assistant run timed out after {Timeout} seconds", timeout.TotalSeconds);
+                throw new InvalidOperationException("Request timed out. Please try again.");
+            }
+
             await Task.Delay(500);
             var updatedRun = await _assistantClient.GetRunAsync(threadId, run.Id);
             run = updatedRun.Value;

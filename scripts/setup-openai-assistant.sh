@@ -5,8 +5,10 @@
 
 set -e
 
-# Load API key from .env
-if [ -f "../.env" ]; then
+# Load API key from .env (check multiple locations)
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+elif [ -f "../.env" ]; then
     export $(grep -v '^#' ../.env | xargs)
 fi
 

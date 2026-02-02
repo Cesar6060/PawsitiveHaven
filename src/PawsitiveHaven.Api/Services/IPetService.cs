@@ -9,4 +9,12 @@ public interface IPetService
     Task<PetDto?> CreatePetAsync(int userId, CreatePetRequest request);
     Task<PetDto?> UpdatePetAsync(int id, int userId, UpdatePetRequest request);
     Task<bool> DeletePetAsync(int id, int userId);
+
+    // Foster assignment methods
+    Task<PetDto?> AssignPetToFosterAsync(int petId, AssignPetRequest request);
+    Task<PetDto?> UnassignPetAsync(int petId);
+    Task<IEnumerable<PetDto>> GetUnassignedPetsAsync();
+    Task<IEnumerable<PetDto>> GetPetsByFosterIdAsync(int fosterId);
+    Task<IEnumerable<PetDto>> GetAllPetsWithFosterAsync();
+    Task<PetDto?> GetPetByIdWithFosterAsync(int id);
 }

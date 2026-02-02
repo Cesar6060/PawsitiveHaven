@@ -12,16 +12,23 @@ namespace PawsitiveHaven.Api.Controllers;
 public class PetsController : ControllerBase
 {
     private readonly IPetService _petService;
+    private readonly ILogger<PetsController> _logger;
 
-    public PetsController(IPetService petService)
+    public PetsController(IPetService petService, ILogger<PetsController> logger)
     {
         _petService = petService;
+        _logger = logger;
     }
 
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return int.Parse(userIdClaim ?? "0");
+    }
+
+    private bool IsAdmin()
+    {
+        return User.IsInRole("Admin");
     }
 
     [HttpGet]
@@ -78,5 +85,80 @@ public class PetsController : ControllerBase
             return NotFound();
 
         return NoContent();
+    }
+
+    // ==================== Foster Assignment Endpoints ====================
+
+    /// <summary>
+    /// Assign a pet to a foster (Admin only)
+    /// </summary>
+    [HttpPost("{id}/assign")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<PetDto>> AssignPetToFoster(int id, [FromBody] AssignPetRequest request)
+    {
+        _logger.LogInformation("Assigning pet {PetId} to foster {FosterId}", id, request.FosterId);
+
+        var pet = await _petService.AssignPetToFosterAsync(id, request);
+
+        if (pet == null)
+            return BadRequest("Failed to assign pet. Pet or foster may not exist.");
+
+        return Ok(pet);
+    }
+
+    /// <summary>
+    /// Remove a pet's foster assignment (Admin only)
+    /// </summary>
+    [HttpPost("{id}/unassign")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<PetDto>> UnassignPet(int id)
+    {
+        _logger.LogInformation("Unassigning pet {PetId} from foster", id);
+
+        var pet = await _petService.UnassignPetAsync(id);
+
+        if (pet == null)
+            return NotFound("Pet not found");
+
+        return Ok(pet);
+    }
+
+    /// <summary>
+    /// Get all pets that are not assigned to any foster (Admin only)
+    /// </summary>
+    [HttpGet("unassigned")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<IEnumerable<PetDto>>> GetUnassignedPets()
+    {
+        var pets = await _petService.GetUnassignedPetsAsync();
+        return Ok(pets);
+    }
+
+    /// <summary>
+    /// Get all pets with foster information (Admin only)
+    /// </summary>
+    [HttpGet("all")]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<IEnumerable<PetDto>>> GetAllPets()
+    {
+        var pets = await _petService.GetAllPetsWithFosterAsync();
+        return Ok(pets);
+    }
+
+    /// <summary>
+    /// Get pets assigned to a specific foster
+    /// </summary>
+    [HttpGet("foster/{fosterId}")]
+    public async Task<ActionResult<IEnumerable<PetDto>>> GetPetsByFoster(int fosterId)
+    {
+        // Allow admins to view any foster's pets, or fosters to view their own
+        var userId = GetUserId();
+        if (!IsAdmin() && userId != fosterId)
+        {
+            return Forbid();
+        }
+
+        var pets = await _petService.GetPetsByFosterIdAsync(fosterId);
+        return Ok(pets);
     }
 }

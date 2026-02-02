@@ -1,7 +1,10 @@
 @page "/settings"
+@using PawsitiveHaven.Web.Models
+@using PawsitiveHaven.Web.Services
 @inject AuthStateService AuthState
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject NotificationService NotificationSvc
 
 <PageTitle>Settings - Pawsitive Haven</PageTitle>
 
@@ -41,6 +44,85 @@ else
                         </span>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Notification Preferences -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-bell me-2"></i>Email Notifications
+            </div>
+            <div class="card-body">
+                @if (_loadingPreferences)
+                {
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">Loading preferences...</span>
+                    </div>
+                }
+                else if (_preferencesError != null)
+                {
+                    <div class="alert alert-danger mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>@_preferencesError
+                    </div>
+                }
+                else
+                {
+                    @if (_saveSuccess)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle me-2"></i>Preferences saved successfully!
+                            <button type="button" class="btn-close" @onclick="() => _saveSuccess = false"></button>
+                        </div>
+                    }
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="emailAppointments"
+                                   checked="@_emailAppointments" @onchange="OnEmailAppointmentsChanged" disabled="@_saving">
+                            <label class="form-check-label" for="emailAppointments">
+                                <strong>Appointment Confirmations</strong>
+                                <br>
+                                <small class="text-muted">Receive email notifications when appointments are scheduled</small>
+                            </label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="emailReminders"
+                                   checked="@_emailReminders" @onchange="OnEmailRemindersChanged" disabled="@_saving">
+                            <label class="form-check-label" for="emailReminders">
+                                <strong>Appointment Reminders</strong>
+                                <br>
+                                <small class="text-muted">Receive reminder emails before upcoming appointments</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reminderDays" class="form-label">
+                            <strong>Reminder Timing</strong>
+                        </label>
+                        <select class="form-select" id="reminderDays" @bind="_reminderDaysBefore"
+                                @bind:after="OnReminderDaysChanged" disabled="@(_saving || !_emailReminders)">
+                            <option value="1">1 day before</option>
+                            <option value="2">2 days before</option>
+                            <option value="3">3 days before</option>
+                        </select>
+                        <small class="text-muted">How many days in advance to send reminder emails</small>
+                    </div>
+
+                    @if (_saving)
+                    {
+                        <div class="text-center py-2">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Saving...</span>
+                            </div>
+                            <span class="ms-2">Saving...</span>
+                        </div>
+                    }
+                }
             </div>
         </div>
 
@@ -128,6 +210,100 @@ else
 }
 
 @code {
+    private bool _loadingPreferences = true;
+    private bool _saving = false;
+    private bool _saveSuccess = false;
+    private string? _preferencesError;
+
+    private bool _emailAppointments = true;
+    private bool _emailReminders = true;
+    private int _reminderDaysBefore = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState.IsAuthenticated)
+        {
+            await LoadPreferences();
+        }
+    }
+
+    private async Task LoadPreferences()
+    {
+        _loadingPreferences = true;
+        _preferencesError = null;
+
+        try
+        {
+            var preferences = await NotificationSvc.GetPreferencesAsync();
+            if (preferences != null)
+            {
+                _emailAppointments = preferences.EmailAppointments;
+                _emailReminders = preferences.EmailReminders;
+                _reminderDaysBefore = preferences.ReminderDaysBefore;
+            }
+        }
+        catch (Exception ex)
+        {
+            _preferencesError = "Failed to load notification preferences. Please try again later.";
+        }
+        finally
+        {
+            _loadingPreferences = false;
+        }
+    }
+
+    private async Task OnEmailAppointmentsChanged(ChangeEventArgs e)
+    {
+        _emailAppointments = (bool)(e.Value ?? false);
+        await SavePreferences();
+    }
+
+    private async Task OnEmailRemindersChanged(ChangeEventArgs e)
+    {
+        _emailReminders = (bool)(e.Value ?? false);
+        await SavePreferences();
+    }
+
+    private async Task OnReminderDaysChanged()
+    {
+        await SavePreferences();
+    }
+
+    private async Task SavePreferences()
+    {
+        _saving = true;
+        _saveSuccess = false;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UpdateNotificationPreferencesRequest(
+                _emailAppointments,
+                _emailReminders,
+                _reminderDaysBefore
+            );
+
+            var result = await NotificationSvc.UpdatePreferencesAsync(request);
+            if (result != null)
+            {
+                _saveSuccess = true;
+            }
+            else
+            {
+                _preferencesError = "Failed to save preferences. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            _preferencesError = "Failed to save preferences. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
+    }
+
     private async Task Logout()
     {
         // Clear server-side auth state

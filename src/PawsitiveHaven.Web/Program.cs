@@ -21,6 +21,9 @@ builder.Services.AddScoped<AppointmentService>();
 builder.Services.AddScoped<FaqService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<PetPhotoService>();
+builder.Services.AddScoped<MedicalRecordService>();
+builder.Services.AddScoped<NotificationService>();
 
 var app = builder.Build();
 

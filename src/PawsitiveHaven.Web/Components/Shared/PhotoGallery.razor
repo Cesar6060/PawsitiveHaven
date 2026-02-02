@@ -1,0 +1,208 @@
+@inject PetPhotoService PhotoService
+
+<div class="photo-gallery">
+    @if (isLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Loading photos...</p>
+        </div>
+    }
+    else if (Photos == null || !Photos.Any())
+    {
+        <div class="text-center py-4">
+            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+            <p class="mt-2 text-muted">No photos yet</p>
+        </div>
+    }
+    else
+    {
+        <div class="photo-grid">
+            @foreach (var photo in Photos)
+            {
+                <div class="photo-item @(photo.IsPrimary ? "primary" : "")">
+                    <img src="@PhotoService.GetPhotoUrl(photo)" alt="Pet photo" class="photo-image" />
+                    <div class="photo-overlay">
+                        @if (photo.IsPrimary)
+                        {
+                            <span class="badge bg-warning text-dark primary-badge">
+                                <i class="bi bi-star-fill"></i> Primary
+                            </span>
+                        }
+                        <div class="photo-actions">
+                            @if (!photo.IsPrimary)
+                            {
+                                <button class="btn btn-sm btn-light" @onclick="() => SetAsPrimary(photo)" title="Set as primary">
+                                    <i class="bi bi-star"></i>
+                                </button>
+                            }
+                            <button class="btn btn-sm btn-danger" @onclick="() => ShowDeleteConfirm(photo)" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@if (showDeleteModal && photoToDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Photo</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this photo?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger btn-sm" @onclick="ConfirmDelete" disabled="@isDeleting">
+                        @if (isDeleting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .photo-gallery {
+        width: 100%;
+    }
+
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .photo-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .photo-item:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .photo-item.primary {
+        border-color: #D97706;
+    }
+
+    .photo-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .photo-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 0.5rem;
+    }
+
+    .photo-item:hover .photo-overlay {
+        opacity: 1;
+    }
+
+    .photo-item.primary .photo-overlay {
+        opacity: 1;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 70%);
+    }
+
+    .primary-badge {
+        align-self: flex-start;
+        font-size: 0.7rem;
+    }
+
+    .photo-actions {
+        display: flex;
+        gap: 0.25rem;
+        justify-content: flex-end;
+    }
+
+    .photo-actions .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int PetId { get; set; }
+
+    [Parameter]
+    public List<PetPhotoDto>? Photos { get; set; }
+
+    [Parameter]
+    public EventCallback OnPhotosChanged { get; set; }
+
+    private bool isLoading = false;
+    private bool showDeleteModal = false;
+    private bool isDeleting = false;
+    private PetPhotoDto? photoToDelete;
+
+    private void ShowDeleteConfirm(PetPhotoDto photo)
+    {
+        photoToDelete = photo;
+        showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        photoToDelete = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (photoToDelete == null) return;
+
+        isDeleting = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await PhotoService.DeletePhotoAsync(PetId, photoToDelete.Id);
+            if (success)
+            {
+                CloseDeleteModal();
+                await OnPhotosChanged.InvokeAsync();
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private async Task SetAsPrimary(PetPhotoDto photo)
+    {
+        var result = await PhotoService.SetPrimaryPhotoAsync(PetId, photo.Id);
+        if (result?.Success == true)
+        {
+            await OnPhotosChanged.InvokeAsync();
+        }
+    }
+}

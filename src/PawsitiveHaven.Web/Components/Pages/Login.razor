@@ -84,7 +84,8 @@
             if (response.Success)
             {
                 // Redirect admins to admin dashboard, regular users to user dashboard
-                Navigation.NavigateTo(AuthState.IsAdmin ? "/admin" : "/dashboard");
+                var targetUrl = AuthState.IsAdmin ? "/admin" : "/dashboard";
+                await InvokeAsync(() => Navigation.NavigateTo(targetUrl, forceLoad: true));
             }
             else
             {

@@ -6,8 +6,6 @@ public class AuthStateService
 {
     private AuthState _state = new();
 
-    public event Action? OnChange;
-
     public AuthState State => _state;
     public bool IsAuthenticated => _state.IsAuthenticated;
     public bool IsAdmin => _state.IsAdmin;
@@ -25,7 +23,6 @@ public class AuthStateService
             Username = username,
             UserLevel = userLevel
         };
-        NotifyStateChanged();
     }
 
     public void SetAuthState(AuthResponse response)
@@ -39,8 +36,5 @@ public class AuthStateService
     public void ClearAuthState()
     {
         _state = new AuthState();
-        NotifyStateChanged();
     }
-
-    private void NotifyStateChanged() => OnChange?.Invoke();
 }

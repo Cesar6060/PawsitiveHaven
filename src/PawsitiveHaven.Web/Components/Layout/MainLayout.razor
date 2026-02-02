@@ -37,13 +37,6 @@
 </div>
 
 @code {
-    protected override void OnInitialized()
-    {
-        AuthState.OnChange += StateHasChanged;
-    }
-
-    public void Dispose()
-    {
-        AuthState.OnChange -= StateHasChanged;
-    }
+    // Auth state changes are handled via forceLoad navigation
+    // which causes a full page reload, so no event subscription needed
 }

@@ -92,9 +92,12 @@
 </nav>
 
 @code {
-    private void Logout()
+    private async Task Logout()
     {
-        Auth.Logout();
-        Navigation.NavigateTo("/login", forceLoad: true);
+        await InvokeAsync(() =>
+        {
+            Auth.Logout();
+            Navigation.NavigateTo("/login", forceLoad: true);
+        });
     }
 }

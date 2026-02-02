@@ -94,8 +94,9 @@
 @code {
     private void Logout()
     {
-        // Navigate with forceLoad to do a full page reload, which clears all state
-        // Don't call Auth.Logout() here as it triggers a dispatcher error
+        // Clear the auth state (safe now since OnChange event was removed)
+        Auth.Logout();
+        // Navigate with forceLoad to do a full page reload
         Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

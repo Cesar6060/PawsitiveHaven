@@ -31,6 +31,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAppointmentRepository, AppointmentRepository>();
         services.AddScoped<IFaqRepository, FaqRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IPetPhotoRepository, PetPhotoRepository>();
+        services.AddScoped<IMedicalRecordRepository, MedicalRecordRepository>();
+        services.AddScoped<INotificationPreferenceRepository, NotificationPreferenceRepository>();
 
         return services;
     }
@@ -44,6 +47,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPetService, PetService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IFaqService, FaqService>();
+        services.AddScoped<IPhotoStorageService, LocalPhotoStorageService>();
+        services.AddScoped<IMedicalRecordService, MedicalRecordService>();
 
         // AI and security services
         services.AddMemoryCache();
@@ -77,6 +82,9 @@ public static class ServiceCollectionExtensions
         // Escalation services
         services.AddScoped<IEscalationRepository, EscalationRepository>();
         services.AddScoped<IEscalationService, EscalationService>();
+
+        // Notification services
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }

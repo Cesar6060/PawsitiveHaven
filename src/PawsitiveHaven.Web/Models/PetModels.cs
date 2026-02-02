@@ -9,7 +9,11 @@ public record PetDto(
     int? Age,
     string? Sex,
     string? Bio,
-    string? ImageUrl
+    string? ImageUrl,
+    int? FosterId = null,
+    string? FosterName = null,
+    DateTime? AssignedAt = null,
+    string? AssignmentNotes = null
 );
 
 public record CreatePetRequest(
@@ -30,4 +34,9 @@ public record UpdatePetRequest(
     string? Sex,
     string? Bio,
     string? ImageUrl
+);
+
+public record AssignPetRequest(
+    int FosterId,
+    string? Notes
 );

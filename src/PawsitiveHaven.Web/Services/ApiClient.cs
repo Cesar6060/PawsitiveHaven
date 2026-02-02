@@ -82,6 +82,28 @@ public class ApiClient
         }
     }
 
+    public async Task<TResponse?> PostEmptyAsync<TResponse>(string endpoint)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _httpClient.PostAsync(endpoint, null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<TResponse>();
+            }
+
+            _logger.LogWarning("POST {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+            return default;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during POST {Endpoint}", endpoint);
+            return default;
+        }
+    }
+
     public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest data)
     {
         try
@@ -161,5 +183,63 @@ public class ApiClient
             _logger.LogError(ex, "Error during DELETE {Endpoint}", endpoint);
             return false;
         }
+    }
+
+    public async Task<TResponse?> PostMultipartAsync<TResponse>(string endpoint, MultipartFormDataContent content)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _httpClient.PostAsync(endpoint, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<TResponse>();
+            }
+
+            _logger.LogWarning("POST multipart {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+
+            // Try to read error response
+            try
+            {
+                return await response.Content.ReadFromJsonAsync<TResponse>();
+            }
+            catch
+            {
+                return default;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during POST multipart {Endpoint}", endpoint);
+            return default;
+        }
+    }
+
+    public async Task<TResponse?> PutEmptyAsync<TResponse>(string endpoint)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _httpClient.PutAsync(endpoint, null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<TResponse>();
+            }
+
+            _logger.LogWarning("PUT {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+            return default;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during PUT {Endpoint}", endpoint);
+            return default;
+        }
+    }
+
+    public string GetApiBaseUrl()
+    {
+        return _httpClient.BaseAddress?.ToString() ?? "";
     }
 }

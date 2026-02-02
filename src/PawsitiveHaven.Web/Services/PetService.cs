@@ -36,4 +36,33 @@ public class PetService
     {
         return await _apiClient.DeleteAsync($"api/pets/{id}");
     }
+
+    // Foster Assignment Methods
+    public async Task<List<PetDto>> GetAllPetsAsync()
+    {
+        var pets = await _apiClient.GetAsync<List<PetDto>>("api/pets/all");
+        return pets ?? new List<PetDto>();
+    }
+
+    public async Task<List<PetDto>> GetUnassignedPetsAsync()
+    {
+        var pets = await _apiClient.GetAsync<List<PetDto>>("api/pets/unassigned");
+        return pets ?? new List<PetDto>();
+    }
+
+    public async Task<List<PetDto>> GetPetsByFosterAsync(int fosterId)
+    {
+        var pets = await _apiClient.GetAsync<List<PetDto>>($"api/pets/foster/{fosterId}");
+        return pets ?? new List<PetDto>();
+    }
+
+    public async Task<PetDto?> AssignPetToFosterAsync(int petId, AssignPetRequest request)
+    {
+        return await _apiClient.PostAsync<AssignPetRequest, PetDto>($"api/pets/{petId}/assign", request);
+    }
+
+    public async Task<PetDto?> UnassignPetAsync(int petId)
+    {
+        return await _apiClient.PostEmptyAsync<PetDto>($"api/pets/{petId}/unassign");
+    }
 }

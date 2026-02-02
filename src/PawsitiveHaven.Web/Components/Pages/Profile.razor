@@ -2,7 +2,9 @@
 @page "/profile/{PetId:int?}"
 @inject AuthStateService AuthState
 @inject PetService PetSvc
+@inject PetPhotoService PhotoSvc
 @inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>My Pets - Pawsitive Haven</PageTitle>
 
@@ -48,24 +50,34 @@ else
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 @foreach (var pet in pets)
                 {
+                    var primaryPhoto = petPhotos.GetValueOrDefault(pet.Id)?.FirstOrDefault(p => p.IsPrimary);
                     <div class="col">
                         <div class="card h-100 pet-profile-card @(selectedPet?.Id == pet.Id ? "border-primary" : "")">
+                            @if (primaryPhoto != null)
+                            {
+                                <div class="pet-card-image">
+                                    <img src="@PhotoSvc.GetPhotoUrl(primaryPhoto)" alt="@pet.Name" class="card-img-top" />
+                                </div>
+                            }
                             <div class="card-body">
                                 <div class="d-flex align-items-start">
-                                    <div class="pet-avatar-lg me-3">
-                                        @if (pet.Species?.ToLower() == "dog")
-                                        {
-                                            <img src="/Assets/dog-icon.svg" alt="Dog" class="pet-icon" />
-                                        }
-                                        else if (pet.Species?.ToLower() == "cat")
-                                        {
-                                            <img src="/Assets/cat-icon.svg" alt="Cat" class="pet-icon" />
-                                        }
-                                        else
-                                        {
-                                            <img src="/Assets/pet-icon.svg" alt="Pet" class="pet-icon" />
-                                        }
-                                    </div>
+                                    @if (primaryPhoto == null)
+                                    {
+                                        <div class="pet-avatar-lg me-3">
+                                            @if (pet.Species?.ToLower() == "dog")
+                                            {
+                                                <img src="/Assets/dog-icon.svg" alt="Dog" class="pet-icon" />
+                                            }
+                                            else if (pet.Species?.ToLower() == "cat")
+                                            {
+                                                <img src="/Assets/cat-icon.svg" alt="Cat" class="pet-icon" />
+                                            }
+                                            else
+                                            {
+                                                <img src="/Assets/pet-icon.svg" alt="Pet" class="pet-icon" />
+                                            }
+                                        </div>
+                                    }
                                     <div class="flex-grow-1">
                                         <h5 class="card-title mb-1">@pet.Name</h5>
                                         <p class="text-muted mb-2">
@@ -95,7 +107,13 @@ else
                                 }
                             </div>
                             <div class="card-footer bg-transparent border-0">
-                                <div class="btn-group w-100">
+                                <div class="btn-group w-100 mb-2">
+                                    <button class="btn btn-outline-secondary btn-sm" style="border-color: #D97706; color: #D97706;" @onclick="() => ShowPhotoModal(pet)">
+                                        <i class="bi bi-images"></i> Photos
+                                    </button>
+                                    <a href="/pets/@pet.Id" class="btn btn-outline-warning btn-sm">
+                                        <i class="bi bi-heart-pulse"></i> Medical
+                                    </a>
                                     <button class="btn btn-outline-primary btn-sm" @onclick="() => ShowEditModal(pet)">
                                         <i class="bi bi-pencil"></i> Edit
                                     </button>
@@ -225,6 +243,145 @@ else
             </div>
         </div>
     }
+
+    <!-- Photo Management Modal -->
+    @if (showPhotoModal && selectedPetForPhotos != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header photo-modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-images me-2"></i>Photos of @selectedPetForPhotos.Name
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="ClosePhotoModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Photo Upload Section -->
+                        <div class="photo-upload-section mb-4">
+                            <h6 class="mb-3"><i class="bi bi-cloud-arrow-up me-2"></i>Upload New Photo</h6>
+                            <div class="photo-upload-dropzone @(isDragging ? "dragging" : "") @(isUploading ? "uploading" : "")"
+                                 @ondragenter="HandleDragEnter"
+                                 @ondragleave="HandleDragLeave"
+                                 @ondragover:preventDefault
+                                 @ondrop:preventDefault>
+
+                                @if (isUploading)
+                                {
+                                    <div class="upload-progress">
+                                        <div class="spinner-border text-primary" role="status"></div>
+                                        <p class="mt-2 mb-0">Uploading...</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="upload-content">
+                                        <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                                        <p class="upload-text mb-2">Drag and drop photos here</p>
+                                        <p class="upload-subtext mb-3">or</p>
+                                        <label class="btn btn-primary btn-sm">
+                                            <i class="bi bi-folder2-open me-1"></i> Browse Files
+                                            <InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.webp" style="display: none;" />
+                                        </label>
+                                        <p class="upload-hint mt-3">
+                                            <small>Max 5MB. Supported: JPG, PNG, WebP</small>
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(uploadErrorMessage))
+                            {
+                                <div class="alert alert-danger mt-2 py-2">
+                                    <i class="bi bi-exclamation-triangle me-1"></i> @uploadErrorMessage
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(uploadSuccessMessage))
+                            {
+                                <div class="alert alert-success mt-2 py-2">
+                                    <i class="bi bi-check-circle me-1"></i> @uploadSuccessMessage
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Photo Gallery Section -->
+                        <div class="photo-gallery-section">
+                            <h6 class="mb-3"><i class="bi bi-grid me-2"></i>Photo Gallery</h6>
+                            @if (currentPetPhotos == null || !currentPetPhotos.Any())
+                            {
+                                <div class="text-center py-4">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                    <p class="mt-2 text-muted">No photos yet. Upload the first one!</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="photo-grid">
+                                    @foreach (var photo in currentPetPhotos)
+                                    {
+                                        <div class="photo-item @(photo.IsPrimary ? "primary" : "")">
+                                            <img src="@PhotoSvc.GetPhotoUrl(photo)" alt="Pet photo" class="photo-image" />
+                                            <div class="photo-overlay">
+                                                @if (photo.IsPrimary)
+                                                {
+                                                    <span class="badge bg-warning text-dark primary-badge">
+                                                        <i class="bi bi-star-fill"></i> Primary
+                                                    </span>
+                                                }
+                                                <div class="photo-actions">
+                                                    @if (!photo.IsPrimary)
+                                                    {
+                                                        <button class="btn btn-sm btn-light" @onclick="() => SetAsPrimary(photo)" title="Set as primary">
+                                                            <i class="bi bi-star"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => ShowPhotoDeleteConfirm(photo)" title="Delete">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="ClosePhotoModal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Photo Delete Confirmation Modal -->
+    @if (showPhotoDeleteModal && photoToDelete != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.7);">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Delete Photo</h5>
+                        <button type="button" class="btn-close" @onclick="ClosePhotoDeleteModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete this photo?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" @onclick="ClosePhotoDeleteModal">Cancel</button>
+                        <button type="button" class="btn btn-danger btn-sm" @onclick="ConfirmPhotoDelete" disabled="@isDeletingPhoto">
+                            @if (isDeletingPhoto)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 <style>
@@ -251,6 +408,147 @@ else
         width: 40px;
         height: 40px;
     }
+
+    .pet-card-image {
+        height: 180px;
+        overflow: hidden;
+    }
+
+    .pet-card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Photo Modal Styles */
+    .photo-modal-header {
+        background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+        border-bottom: 2px solid #D97706;
+    }
+
+    .photo-upload-dropzone {
+        border: 2px dashed #D97706;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+        transition: all 0.3s ease;
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .photo-upload-dropzone:hover {
+        border-color: #B45309;
+        background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
+    }
+
+    .photo-upload-dropzone.dragging {
+        border-color: #B45309;
+        background: linear-gradient(135deg, #FED7AA 0%, #FDBA74 100%);
+        transform: scale(1.02);
+    }
+
+    .photo-upload-dropzone.uploading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+        color: #D97706;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-text {
+        font-weight: 600;
+        color: #92400E;
+    }
+
+    .upload-subtext {
+        color: #B45309;
+        font-size: 0.9rem;
+    }
+
+    .upload-hint {
+        color: #78350F;
+        opacity: 0.7;
+    }
+
+    .upload-progress {
+        color: #D97706;
+    }
+
+    /* Photo Gallery Styles */
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .photo-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .photo-item:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .photo-item.primary {
+        border-color: #D97706;
+    }
+
+    .photo-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .photo-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 0.5rem;
+    }
+
+    .photo-item:hover .photo-overlay {
+        opacity: 1;
+    }
+
+    .photo-item.primary .photo-overlay {
+        opacity: 1;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 70%);
+    }
+
+    .primary-badge {
+        align-self: flex-start;
+        font-size: 0.65rem;
+    }
+
+    .photo-actions {
+        display: flex;
+        gap: 0.25rem;
+        justify-content: flex-end;
+    }
+
+    .photo-actions .btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+    }
 </style>
 
 @code {
@@ -258,6 +556,7 @@ else
     public int? PetId { get; set; }
 
     private List<PetDto> pets = new();
+    private Dictionary<int, List<PetPhotoDto>> petPhotos = new();
     private PetDto? selectedPet;
     private bool isLoading = true;
     private bool showModal = false;
@@ -268,6 +567,21 @@ else
     private string? errorMessage;
     private PetDto? petToDelete;
     private PetFormModel petForm = new();
+
+    // Photo modal state
+    private bool showPhotoModal = false;
+    private PetDto? selectedPetForPhotos;
+    private List<PetPhotoDto>? currentPetPhotos;
+    private bool isDragging = false;
+    private bool isUploading = false;
+    private string? uploadErrorMessage;
+    private string? uploadSuccessMessage;
+    private bool showPhotoDeleteModal = false;
+    private bool isDeletingPhoto = false;
+    private PetPhotoDto? photoToDelete;
+
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
     protected override async Task OnInitializedAsync()
     {
@@ -291,6 +605,14 @@ else
         try
         {
             pets = await PetSvc.GetPetsAsync();
+
+            // Load photos for each pet
+            petPhotos.Clear();
+            foreach (var pet in pets)
+            {
+                var photos = await PhotoSvc.GetPhotosAsync(pet.Id);
+                petPhotos[pet.Id] = photos;
+            }
         }
         finally
         {
@@ -415,6 +737,153 @@ else
         finally
         {
             isDeleting = false;
+        }
+    }
+
+    // Photo management methods
+    private async Task ShowPhotoModal(PetDto pet)
+    {
+        selectedPetForPhotos = pet;
+        currentPetPhotos = petPhotos.GetValueOrDefault(pet.Id) ?? new List<PetPhotoDto>();
+        uploadErrorMessage = null;
+        uploadSuccessMessage = null;
+        showPhotoModal = true;
+    }
+
+    private void ClosePhotoModal()
+    {
+        showPhotoModal = false;
+        selectedPetForPhotos = null;
+        currentPetPhotos = null;
+    }
+
+    private void HandleDragEnter()
+    {
+        isDragging = true;
+    }
+
+    private void HandleDragLeave()
+    {
+        isDragging = false;
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        if (selectedPetForPhotos == null) return;
+
+        uploadErrorMessage = null;
+        uploadSuccessMessage = null;
+
+        var file = e.File;
+
+        if (file == null)
+        {
+            uploadErrorMessage = "No file selected";
+            return;
+        }
+
+        // Validate file type
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        if (!AllowedExtensions.Contains(extension))
+        {
+            uploadErrorMessage = "Invalid file type. Allowed: JPG, PNG, WebP";
+            return;
+        }
+
+        // Validate file size
+        if (file.Size > MaxFileSize)
+        {
+            uploadErrorMessage = "File size exceeds 5MB limit";
+            return;
+        }
+
+        isUploading = true;
+        StateHasChanged();
+
+        try
+        {
+            using var stream = file.OpenReadStream(MaxFileSize);
+            var result = await PhotoSvc.UploadPhotoAsync(selectedPetForPhotos.Id, stream, file.Name);
+
+            if (result?.Success == true)
+            {
+                uploadSuccessMessage = "Photo uploaded successfully!";
+                // Refresh photos
+                currentPetPhotos = await PhotoSvc.GetPhotosAsync(selectedPetForPhotos.Id);
+                petPhotos[selectedPetForPhotos.Id] = currentPetPhotos;
+            }
+            else
+            {
+                uploadErrorMessage = result?.Message ?? "Error uploading photo";
+            }
+        }
+        catch (Exception ex)
+        {
+            uploadErrorMessage = $"Error uploading file: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+
+            // Clear success message after 3 seconds
+            if (!string.IsNullOrEmpty(uploadSuccessMessage))
+            {
+                await Task.Delay(3000);
+                uploadSuccessMessage = null;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task SetAsPrimary(PetPhotoDto photo)
+    {
+        if (selectedPetForPhotos == null) return;
+
+        var result = await PhotoSvc.SetPrimaryPhotoAsync(selectedPetForPhotos.Id, photo.Id);
+        if (result?.Success == true)
+        {
+            // Refresh photos
+            currentPetPhotos = await PhotoSvc.GetPhotosAsync(selectedPetForPhotos.Id);
+            petPhotos[selectedPetForPhotos.Id] = currentPetPhotos;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowPhotoDeleteConfirm(PetPhotoDto photo)
+    {
+        photoToDelete = photo;
+        showPhotoDeleteModal = true;
+    }
+
+    private void ClosePhotoDeleteModal()
+    {
+        showPhotoDeleteModal = false;
+        photoToDelete = null;
+    }
+
+    private async Task ConfirmPhotoDelete()
+    {
+        if (photoToDelete == null || selectedPetForPhotos == null) return;
+
+        isDeletingPhoto = true;
+        StateHasChanged();
+
+        try
+        {
+            var success = await PhotoSvc.DeletePhotoAsync(selectedPetForPhotos.Id, photoToDelete.Id);
+            if (success)
+            {
+                ClosePhotoDeleteModal();
+                // Refresh photos
+                currentPetPhotos = await PhotoSvc.GetPhotosAsync(selectedPetForPhotos.Id);
+                petPhotos[selectedPetForPhotos.Id] = currentPetPhotos;
+            }
+        }
+        finally
+        {
+            isDeletingPhoto = false;
+            StateHasChanged();
         }
     }
 

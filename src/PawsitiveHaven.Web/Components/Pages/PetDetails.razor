@@ -1,0 +1,632 @@
+@page "/pets/{PetId:int}"
+@inject AuthStateService AuthState
+@inject PetService PetSvc
+@inject MedicalRecordService MedicalRecordSvc
+@inject NavigationManager Navigation
+
+<PageTitle>@(pet?.Name ?? "Pet Details") - Pawsitive Haven</PageTitle>
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="text-center py-5">
+        <p>Please log in to view pet details.</p>
+        <a href="/login" class="btn btn-primary">Login</a>
+    </div>
+}
+else if (isLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Loading pet details...</p>
+    </div>
+}
+else if (pet == null)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-exclamation-circle fs-1 text-warning"></i>
+        <h4 class="mt-3">Pet Not Found</h4>
+        <p class="text-muted">The pet you're looking for doesn't exist or you don't have access.</p>
+        <a href="/profile" class="btn btn-primary">Back to My Pets</a>
+    </div>
+}
+else
+{
+    <div class="container-fluid">
+        <!-- Back Button -->
+        <a href="/profile" class="btn btn-link text-decoration-none mb-3 ps-0">
+            <i class="bi bi-arrow-left me-1"></i> Back to My Pets
+        </a>
+
+        <!-- Pet Header -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="pet-avatar-xl me-4">
+                        @if (pet.Species?.ToLower() == "dog")
+                        {
+                            <i class="fa-solid fa-dog fs-1 text-warning"></i>
+                        }
+                        else if (pet.Species?.ToLower() == "cat")
+                        {
+                            <i class="fa-solid fa-cat fs-1 text-info"></i>
+                        }
+                        else
+                        {
+                            <i class="fa-solid fa-paw fs-1 text-success"></i>
+                        }
+                    </div>
+                    <div class="flex-grow-1">
+                        <h2 class="mb-1">@pet.Name</h2>
+                        <p class="text-muted mb-2">
+                            @pet.Species
+                            @if (!string.IsNullOrEmpty(pet.Breed))
+                            {
+                                <text> - @pet.Breed</text>
+                            }
+                        </p>
+                        <div class="pet-badges">
+                            @if (pet.Age.HasValue)
+                            {
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="bi bi-calendar me-1"></i>@pet.Age @(pet.Age == 1 ? "year" : "years") old
+                                </span>
+                            }
+                            @if (!string.IsNullOrEmpty(pet.Sex))
+                            {
+                                <span class="badge bg-light text-dark">
+                                    <i class="bi bi-gender-ambiguous me-1"></i>@pet.Sex
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(pet.Bio))
+                {
+                    <hr />
+                    <p class="text-muted mb-0">@pet.Bio</p>
+                }
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <button class="nav-link @(activeTab == "medical" ? "active" : "")" @onclick='() => SetActiveTab("medical")'>
+                    <i class="bi bi-heart-pulse me-1"></i> Medical Records
+                </button>
+            </li>
+        </ul>
+
+        <!-- Medical Records Tab -->
+        @if (activeTab == "medical")
+        {
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-heart-pulse me-2 text-danger"></i>Medical Records
+                    </h5>
+                    <button class="btn btn-primary btn-sm" @onclick="ShowAddMedicalRecordModal">
+                        <i class="bi bi-plus-lg me-1"></i> Add Record
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (isLoadingRecords)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                        </div>
+                    }
+                    else if (medicalRecords.Count == 0)
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-clipboard2-x fs-1 text-muted"></i>
+                            <p class="mt-2 text-muted">No medical records yet</p>
+                            <button class="btn btn-primary" @onclick="ShowAddMedicalRecordModal">
+                                <i class="bi bi-plus-lg me-1"></i> Add First Record
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Filter by type -->
+                        <div class="mb-3">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm @(recordFilter == "all" ? "btn-primary" : "btn-outline-primary")" @onclick='() => SetRecordFilter("all")'>
+                                    All
+                                </button>
+                                <button type="button" class="btn btn-sm @(recordFilter == "Vaccination" ? "btn-warning" : "btn-outline-warning")" @onclick='() => SetRecordFilter("Vaccination")'>
+                                    <i class="bi bi-shield-check me-1"></i>Vaccinations
+                                </button>
+                                <button type="button" class="btn btn-sm @(recordFilter == "VetVisit" ? "btn-info" : "btn-outline-info")" @onclick='() => SetRecordFilter("VetVisit")'>
+                                    <i class="bi bi-hospital me-1"></i>Vet Visits
+                                </button>
+                                <button type="button" class="btn btn-sm @(recordFilter == "Medication" ? "btn-success" : "btn-outline-success")" @onclick='() => SetRecordFilter("Medication")'>
+                                    <i class="bi bi-capsule me-1"></i>Medications
+                                </button>
+                                <button type="button" class="btn btn-sm @(recordFilter == "Surgery" ? "btn-danger" : "btn-outline-danger")" @onclick='() => SetRecordFilter("Surgery")'>
+                                    <i class="bi bi-bandaid me-1"></i>Surgeries
+                                </button>
+                                <button type="button" class="btn btn-sm @(recordFilter == "Other" ? "btn-secondary" : "btn-outline-secondary")" @onclick='() => SetRecordFilter("Other")'>
+                                    <i class="bi bi-three-dots me-1"></i>Other
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Records List -->
+                        <div class="list-group">
+                            @foreach (var record in FilteredRecords)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="d-flex align-items-start">
+                                            <span class="badge @GetRecordTypeBadgeClass(record.RecordType) me-3 mt-1">
+                                                <i class="@GetRecordTypeIcon(record.RecordType)"></i>
+                                            </span>
+                                            <div>
+                                                <h6 class="mb-1">@record.Title</h6>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-calendar me-1"></i>@record.RecordDate.ToString("MMM dd, yyyy")
+                                                    @if (record.NextDueDate.HasValue)
+                                                    {
+                                                        var daysUntil = record.NextDueDate.Value.DayNumber - DateOnly.FromDateTime(DateTime.Now).DayNumber;
+                                                        <span class="ms-2 @(daysUntil <= 7 ? "text-danger fw-bold" : daysUntil <= 30 ? "text-warning" : "")">
+                                                            <i class="bi bi-clock me-1"></i>Due: @record.NextDueDate.Value.ToString("MMM dd, yyyy")
+                                                            @if (daysUntil <= 0)
+                                                            {
+                                                                <text> (Overdue!)</text>
+                                                            }
+                                                            else if (daysUntil == 1)
+                                                            {
+                                                                <text> (Tomorrow)</text>
+                                                            }
+                                                            else if (daysUntil <= 7)
+                                                            {
+                                                                <text> (@daysUntil days)</text>
+                                                            }
+                                                        </span>
+                                                    }
+                                                </small>
+                                                @if (!string.IsNullOrEmpty(record.Veterinarian) || !string.IsNullOrEmpty(record.ClinicName))
+                                                {
+                                                    <div class="small text-muted mt-1">
+                                                        @if (!string.IsNullOrEmpty(record.Veterinarian))
+                                                        {
+                                                            <span><i class="bi bi-person me-1"></i>@record.Veterinarian</span>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(record.ClinicName))
+                                                        {
+                                                            <span class="ms-2"><i class="bi bi-building me-1"></i>@record.ClinicName</span>
+                                                        }
+                                                    </div>
+                                                }
+                                                @if (!string.IsNullOrEmpty(record.Description))
+                                                {
+                                                    <p class="mb-1 mt-2 small">@record.Description</p>
+                                                }
+                                                @if (record.Cost.HasValue)
+                                                {
+                                                    <small class="text-success">
+                                                        <i class="bi bi-currency-dollar"></i>@record.Cost.Value.ToString("F2")
+                                                    </small>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditMedicalRecordModal(record)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ShowDeleteMedicalRecordConfirm(record)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Add/Edit Medical Record Modal -->
+    @if (showMedicalRecordModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-heart-pulse me-2 text-danger"></i>
+                            @(isEditingRecord ? "Edit Medical Record" : "Add Medical Record")
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CloseMedicalRecordModal"></button>
+                    </div>
+                    <EditForm Model="recordForm" OnValidSubmit="SaveMedicalRecord">
+                        <DataAnnotationsValidator />
+                        <div class="modal-body">
+                            @if (!string.IsNullOrEmpty(recordErrorMessage))
+                            {
+                                <div class="alert alert-danger">@recordErrorMessage</div>
+                            }
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Record Type *</label>
+                                    <InputSelect class="form-select" @bind-Value="recordForm.RecordType">
+                                        <option value="">Select type</option>
+                                        <option value="Vaccination">Vaccination</option>
+                                        <option value="VetVisit">Vet Visit</option>
+                                        <option value="Medication">Medication</option>
+                                        <option value="Surgery">Surgery</option>
+                                        <option value="Other">Other</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => recordForm.RecordType)" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <InputText class="form-control" @bind-Value="recordForm.Title" placeholder="e.g., Rabies Vaccine, Annual Checkup" />
+                                    <ValidationMessage For="@(() => recordForm.Title)" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Record Date *</label>
+                                    <InputDate class="form-control" @bind-Value="recordForm.RecordDate" />
+                                    <ValidationMessage For="@(() => recordForm.RecordDate)" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Next Due Date</label>
+                                    <InputDate class="form-control" @bind-Value="recordForm.NextDueDate" />
+                                    <small class="text-muted">For vaccinations or medications that need to be repeated</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <InputTextArea class="form-control" @bind-Value="recordForm.Description" rows="3"
+                                    placeholder="Details about the treatment, diagnosis, or procedure..." />
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Veterinarian</label>
+                                    <InputText class="form-control" @bind-Value="recordForm.Veterinarian" placeholder="Dr. Smith" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Clinic Name</label>
+                                    <InputText class="form-control" @bind-Value="recordForm.ClinicName" placeholder="Happy Paws Vet Clinic" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Cost ($)</label>
+                                    <InputNumber class="form-control" @bind-Value="recordForm.Cost" placeholder="0.00" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Notes</label>
+                                <InputTextArea class="form-control" @bind-Value="recordForm.Notes" rows="2"
+                                    placeholder="Any additional notes..." />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseMedicalRecordModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSavingRecord">
+                                @if (isSavingRecord)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1"></span>
+                                }
+                                @(isEditingRecord ? "Save Changes" : "Add Record")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Delete Medical Record Confirmation Modal -->
+    @if (showDeleteRecordModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Delete Medical Record</h5>
+                        <button type="button" class="btn-close" @onclick="CloseDeleteRecordModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the record "<strong>@recordToDelete?.Title</strong>"?</p>
+                        <p class="text-muted small">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseDeleteRecordModal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @onclick="DeleteMedicalRecord" disabled="@isDeletingRecord">
+                            @if (isDeletingRecord)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<style>
+    .pet-avatar-xl {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-cream, #FFF7ED);
+        border-radius: 16px;
+    }
+
+    .nav-tabs .nav-link {
+        color: #6c757d;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #D97706;
+        border-color: #D97706;
+        border-bottom-color: transparent;
+    }
+
+    .badge-vaccination { background-color: #D97706; }
+    .badge-vetvisit { background-color: #0dcaf0; }
+    .badge-medication { background-color: #198754; }
+    .badge-surgery { background-color: #dc3545; }
+    .badge-other { background-color: #6c757d; }
+</style>
+
+@code {
+    [Parameter]
+    public int PetId { get; set; }
+
+    private PetDto? pet;
+    private List<MedicalRecordDto> medicalRecords = new();
+    private bool isLoading = true;
+    private bool isLoadingRecords = true;
+    private string activeTab = "medical";
+    private string recordFilter = "all";
+
+    // Medical Record Modal State
+    private bool showMedicalRecordModal = false;
+    private bool isEditingRecord = false;
+    private bool isSavingRecord = false;
+    private string? recordErrorMessage;
+    private MedicalRecordFormModel recordForm = new();
+
+    // Delete Record Modal State
+    private bool showDeleteRecordModal = false;
+    private bool isDeletingRecord = false;
+    private MedicalRecordDto? recordToDelete;
+
+    private IEnumerable<MedicalRecordDto> FilteredRecords => recordFilter == "all"
+        ? medicalRecords
+        : medicalRecords.Where(r => r.RecordType == recordFilter);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        try
+        {
+            pet = await PetSvc.GetPetAsync(PetId);
+            if (pet != null)
+            {
+                await LoadMedicalRecordsAsync();
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadMedicalRecordsAsync()
+    {
+        isLoadingRecords = true;
+        try
+        {
+            medicalRecords = await MedicalRecordSvc.GetPetMedicalRecordsAsync(PetId);
+        }
+        finally
+        {
+            isLoadingRecords = false;
+        }
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+    }
+
+    private void SetRecordFilter(string filter)
+    {
+        recordFilter = filter;
+    }
+
+    private string GetRecordTypeBadgeClass(string type) => type switch
+    {
+        "Vaccination" => "badge-vaccination",
+        "VetVisit" => "badge-vetvisit",
+        "Medication" => "badge-medication",
+        "Surgery" => "badge-surgery",
+        _ => "badge-other"
+    };
+
+    private string GetRecordTypeIcon(string type) => type switch
+    {
+        "Vaccination" => "bi bi-shield-check",
+        "VetVisit" => "bi bi-hospital",
+        "Medication" => "bi bi-capsule",
+        "Surgery" => "bi bi-bandaid",
+        _ => "bi bi-three-dots"
+    };
+
+    // Medical Record Modal Methods
+    private void ShowAddMedicalRecordModal()
+    {
+        recordForm = new MedicalRecordFormModel
+        {
+            RecordDate = DateOnly.FromDateTime(DateTime.Now)
+        };
+        isEditingRecord = false;
+        recordErrorMessage = null;
+        showMedicalRecordModal = true;
+    }
+
+    private void ShowEditMedicalRecordModal(MedicalRecordDto record)
+    {
+        recordForm = new MedicalRecordFormModel
+        {
+            Id = record.Id,
+            RecordType = record.RecordType,
+            Title = record.Title,
+            Description = record.Description,
+            RecordDate = record.RecordDate,
+            NextDueDate = record.NextDueDate,
+            Veterinarian = record.Veterinarian,
+            ClinicName = record.ClinicName,
+            Cost = record.Cost,
+            Notes = record.Notes
+        };
+        isEditingRecord = true;
+        recordErrorMessage = null;
+        showMedicalRecordModal = true;
+    }
+
+    private void CloseMedicalRecordModal()
+    {
+        showMedicalRecordModal = false;
+        recordForm = new MedicalRecordFormModel();
+    }
+
+    private async Task SaveMedicalRecord()
+    {
+        if (string.IsNullOrEmpty(recordForm.RecordType) || string.IsNullOrEmpty(recordForm.Title))
+        {
+            recordErrorMessage = "Please fill in all required fields.";
+            return;
+        }
+
+        isSavingRecord = true;
+        recordErrorMessage = null;
+
+        try
+        {
+            if (isEditingRecord)
+            {
+                var request = new UpdateMedicalRecordRequest(
+                    recordForm.RecordType,
+                    recordForm.Title,
+                    recordForm.Description,
+                    recordForm.RecordDate,
+                    recordForm.NextDueDate,
+                    recordForm.Veterinarian,
+                    recordForm.ClinicName,
+                    recordForm.Cost,
+                    recordForm.Notes
+                );
+                var result = await MedicalRecordSvc.UpdateMedicalRecordAsync(PetId, recordForm.Id, request);
+                if (result == null)
+                {
+                    recordErrorMessage = "Failed to update record. Please try again.";
+                    return;
+                }
+            }
+            else
+            {
+                var request = new CreateMedicalRecordRequest(
+                    recordForm.RecordType ?? "",
+                    recordForm.Title ?? "",
+                    recordForm.Description,
+                    recordForm.RecordDate,
+                    recordForm.NextDueDate,
+                    recordForm.Veterinarian,
+                    recordForm.ClinicName,
+                    recordForm.Cost,
+                    recordForm.Notes
+                );
+                var result = await MedicalRecordSvc.CreateMedicalRecordAsync(PetId, request);
+                if (result == null)
+                {
+                    recordErrorMessage = "Failed to add record. Please try again.";
+                    return;
+                }
+            }
+
+            CloseMedicalRecordModal();
+            await LoadMedicalRecordsAsync();
+        }
+        finally
+        {
+            isSavingRecord = false;
+        }
+    }
+
+    private void ShowDeleteMedicalRecordConfirm(MedicalRecordDto record)
+    {
+        recordToDelete = record;
+        showDeleteRecordModal = true;
+    }
+
+    private void CloseDeleteRecordModal()
+    {
+        showDeleteRecordModal = false;
+        recordToDelete = null;
+    }
+
+    private async Task DeleteMedicalRecord()
+    {
+        if (recordToDelete == null) return;
+
+        isDeletingRecord = true;
+        try
+        {
+            var success = await MedicalRecordSvc.DeleteMedicalRecordAsync(PetId, recordToDelete.Id);
+            if (success)
+            {
+                CloseDeleteRecordModal();
+                await LoadMedicalRecordsAsync();
+            }
+        }
+        finally
+        {
+            isDeletingRecord = false;
+        }
+    }
+
+    private class MedicalRecordFormModel
+    {
+        public int Id { get; set; }
+        public string? RecordType { get; set; }
+        public string? Title { get; set; }
+        public string? Description { get; set; }
+        public DateOnly RecordDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
+        public DateOnly? NextDueDate { get; set; }
+        public string? Veterinarian { get; set; }
+        public string? ClinicName { get; set; }
+        public decimal? Cost { get; set; }
+        public string? Notes { get; set; }
+    }
+}

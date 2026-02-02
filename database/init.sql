@@ -2,6 +2,9 @@
 -- PostgreSQL 17
 
 -- Drop tables if they exist (for clean rebuilds)
+DROP TABLE IF EXISTS notification_preferences CASCADE;
+DROP TABLE IF EXISTS medical_records CASCADE;
+DROP TABLE IF EXISTS pet_photos CASCADE;
 DROP TABLE IF EXISTS conversation_messages CASCADE;
 DROP TABLE IF EXISTS conversations CASCADE;
 DROP TABLE IF EXISTS appointments CASCADE;
@@ -36,12 +39,56 @@ CREATE TABLE pets (
     sex VARCHAR(20),
     bio TEXT,
     image_url VARCHAR(500),
+    foster_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    assigned_at TIMESTAMP WITH TIME ZONE,
+    assignment_notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create index for user pet queries
 CREATE INDEX idx_pets_user_id ON pets(user_id);
+CREATE INDEX idx_pets_foster_id ON pets(foster_id);
+
+-- Pet photos table
+CREATE TABLE pet_photos (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Create indexes for pet photos
+CREATE INDEX idx_pet_photos_pet_id ON pet_photos(pet_id);
+CREATE INDEX idx_pet_photos_is_primary ON pet_photos(pet_id, is_primary);
+-- Enforce only one primary photo per pet at the database level
+CREATE UNIQUE INDEX idx_pet_photos_single_primary ON pet_photos(pet_id) WHERE is_primary = true;
+
+-- Medical records table (for tracking vaccinations, vet visits, medications, surgeries)
+CREATE TABLE medical_records (
+    id SERIAL PRIMARY KEY,
+    pet_id INTEGER NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    record_type VARCHAR(50) NOT NULL, -- 'Vaccination', 'VetVisit', 'Medication', 'Surgery', 'Other'
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    record_date DATE NOT NULL,
+    next_due_date DATE, -- for vaccinations/medications that need to be repeated
+    veterinarian VARCHAR(100),
+    clinic_name VARCHAR(100),
+    cost DECIMAL(10,2),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Create indexes for medical records queries
+CREATE INDEX idx_medical_records_pet_id ON medical_records(pet_id);
+CREATE INDEX idx_medical_records_record_type ON medical_records(record_type);
+CREATE INDEX idx_medical_records_next_due_date ON medical_records(next_due_date);
+CREATE INDEX idx_medical_records_record_date ON medical_records(record_date);
 
 -- Appointments table
 CREATE TABLE appointments (
@@ -99,6 +146,20 @@ CREATE TABLE conversation_messages (
 
 -- Create index for conversation messages
 CREATE INDEX idx_conversation_messages_conversation_id ON conversation_messages(conversation_id);
+
+-- Notification preferences table
+CREATE TABLE notification_preferences (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    email_appointments BOOLEAN NOT NULL DEFAULT TRUE,
+    email_reminders BOOLEAN NOT NULL DEFAULT TRUE,
+    reminder_days_before INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for notification preferences
+CREATE INDEX idx_notification_preferences_user_id ON notification_preferences(user_id);
 
 -- Escalations table (for human support requests)
 CREATE TABLE escalations (
@@ -181,6 +242,19 @@ INSERT INTO appointments (user_id, pet_id, title, description, appointment_date,
 (2, 1, 'Annual Checkup', 'Buddy''s yearly wellness exam and vaccinations', CURRENT_DATE + INTERVAL '7 days', '10:00:00'),
 (2, 2, 'Grooming', 'Whiskers'' nail trim and brushing', CURRENT_DATE + INTERVAL '3 days', '14:00:00');
 
+-- Insert sample medical records for demo pets
+INSERT INTO medical_records (pet_id, record_type, title, description, record_date, next_due_date, veterinarian, clinic_name, cost, notes, created_by) VALUES
+-- Buddy's medical records
+(1, 'Vaccination', 'DHPP Vaccine', 'Distemper, Hepatitis, Parainfluenza, Parvovirus vaccine', CURRENT_DATE - INTERVAL '6 months', CURRENT_DATE + INTERVAL '6 months', 'Dr. Sarah Johnson', 'Pawsitive Vet Clinic', 45.00, 'No adverse reactions observed', 2),
+(1, 'Vaccination', 'Rabies Vaccine', 'Annual rabies vaccination', CURRENT_DATE - INTERVAL '3 months', CURRENT_DATE + INTERVAL '9 months', 'Dr. Sarah Johnson', 'Pawsitive Vet Clinic', 25.00, 'Required by law', 2),
+(1, 'Medication', 'Heartworm Prevention', 'Monthly heartworm preventative - Heartgard Plus', CURRENT_DATE - INTERVAL '1 month', CURRENT_DATE + INTERVAL '1 month', 'Dr. Sarah Johnson', 'Pawsitive Vet Clinic', 15.00, 'Give with food on the 1st of each month', 2),
+(1, 'VetVisit', 'Annual Wellness Exam', 'Complete physical examination', CURRENT_DATE - INTERVAL '6 months', CURRENT_DATE + INTERVAL '6 months', 'Dr. Sarah Johnson', 'Pawsitive Vet Clinic', 75.00, 'Healthy weight, good dental health, all vitals normal', 2),
+-- Whiskers' medical records
+(2, 'Vaccination', 'FVRCP Vaccine', 'Feline viral rhinotracheitis, calicivirus, panleukopenia', CURRENT_DATE - INTERVAL '4 months', CURRENT_DATE + INTERVAL '8 months', 'Dr. Mike Chen', 'City Cat Clinic', 40.00, 'Booster due in 1 year', 2),
+(2, 'Vaccination', 'Rabies Vaccine', 'Annual rabies vaccination', CURRENT_DATE - INTERVAL '2 months', CURRENT_DATE + INTERVAL '10 months', 'Dr. Mike Chen', 'City Cat Clinic', 25.00, 'No adverse reactions', 2),
+(2, 'VetVisit', 'Dental Cleaning', 'Professional dental cleaning under anesthesia', CURRENT_DATE - INTERVAL '2 months', NULL, 'Dr. Mike Chen', 'City Cat Clinic', 250.00, 'Minor tartar buildup removed, teeth in good condition', 2),
+(2, 'Medication', 'Flea Prevention', 'Monthly flea and tick prevention - Revolution Plus', CURRENT_DATE - INTERVAL '15 days', CURRENT_DATE + INTERVAL '15 days', 'Dr. Mike Chen', 'City Cat Clinic', 20.00, 'Apply topically between shoulder blades', 2);
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -196,3 +270,4 @@ CREATE TRIGGER update_pets_updated_at BEFORE UPDATE ON pets FOR EACH ROW EXECUTE
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON appointments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_faqs_updated_at BEFORE UPDATE ON faqs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON conversations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_notification_preferences_updated_at BEFORE UPDATE ON notification_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

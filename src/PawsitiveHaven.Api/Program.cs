@@ -28,6 +28,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFrontend");
 
+// Serve static files (for uploaded photos)
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -1,0 +1,207 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject PetPhotoService PhotoService
+
+<div class="photo-upload-container">
+    <div class="photo-upload-dropzone @(isDragging ? "dragging" : "") @(isUploading ? "uploading" : "")"
+         @ondragenter="HandleDragEnter"
+         @ondragleave="HandleDragLeave"
+         @ondragover:preventDefault
+         @ondrop="HandleDrop"
+         @ondrop:preventDefault>
+
+        @if (isUploading)
+        {
+            <div class="upload-progress">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 mb-0">Uploading...</p>
+            </div>
+        }
+        else
+        {
+            <div class="upload-content">
+                <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                <p class="upload-text mb-2">Drag and drop photos here</p>
+                <p class="upload-subtext mb-3">or</p>
+                <label class="btn btn-primary btn-sm">
+                    <i class="bi bi-folder2-open me-1"></i> Browse Files
+                    <InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.webp" style="display: none;" />
+                </label>
+                <p class="upload-hint mt-3">
+                    <small>Max 5MB. Supported: JPG, PNG, WebP</small>
+                </p>
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-2 py-2">
+            <i class="bi bi-exclamation-triangle me-1"></i> @errorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success mt-2 py-2">
+            <i class="bi bi-check-circle me-1"></i> @successMessage
+        </div>
+    }
+</div>
+
+<style>
+    .photo-upload-container {
+        width: 100%;
+    }
+
+    .photo-upload-dropzone {
+        border: 2px dashed #D97706;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+        transition: all 0.3s ease;
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .photo-upload-dropzone:hover {
+        border-color: #B45309;
+        background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
+    }
+
+    .photo-upload-dropzone.dragging {
+        border-color: #B45309;
+        background: linear-gradient(135deg, #FED7AA 0%, #FDBA74 100%);
+        transform: scale(1.02);
+    }
+
+    .photo-upload-dropzone.uploading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: #D97706;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-text {
+        font-weight: 600;
+        color: #92400E;
+    }
+
+    .upload-subtext {
+        color: #B45309;
+        font-size: 0.9rem;
+    }
+
+    .upload-hint {
+        color: #78350F;
+        opacity: 0.7;
+    }
+
+    .upload-progress {
+        color: #D97706;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int PetId { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnPhotoUploaded { get; set; }
+
+    private bool isDragging = false;
+    private bool isUploading = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
+
+    private void HandleDragEnter()
+    {
+        isDragging = true;
+    }
+
+    private void HandleDragLeave()
+    {
+        isDragging = false;
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        isDragging = false;
+        // Note: File drop from JavaScript needs interop - simplified here
+        // The InputFile component handles the actual file selection
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        var file = e.File;
+
+        if (file == null)
+        {
+            errorMessage = "No file selected";
+            return;
+        }
+
+        // Validate file type
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        if (!AllowedExtensions.Contains(extension))
+        {
+            errorMessage = "Invalid file type. Allowed: JPG, PNG, WebP";
+            return;
+        }
+
+        // Validate file size
+        if (file.Size > MaxFileSize)
+        {
+            errorMessage = "File size exceeds 5MB limit";
+            return;
+        }
+
+        isUploading = true;
+        StateHasChanged();
+
+        try
+        {
+            using var stream = file.OpenReadStream(MaxFileSize);
+            var result = await PhotoService.UploadPhotoAsync(PetId, stream, file.Name);
+            if (result != null && result.Success)
+            {
+                await OnPhotoUploaded.InvokeAsync(true);
+                successMessage = "Photo uploaded successfully!";
+            }
+            else
+            {
+                errorMessage = result?.Message ?? "Failed to upload photo. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error uploading file: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+
+            // Clear success message after 3 seconds
+            if (!string.IsNullOrEmpty(successMessage))
+            {
+                await Task.Delay(3000);
+                successMessage = null;
+                StateHasChanged();
+            }
+        }
+    }
+}

@@ -11,11 +11,14 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Pet> Pets => Set<Pet>();
+    public DbSet<PetPhoto> PetPhotos => Set<PetPhoto>();
+    public DbSet<MedicalRecord> MedicalRecords => Set<MedicalRecord>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<Faq> Faqs => Set<Faq>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
     public DbSet<Escalation> Escalations => Set<Escalation>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +56,9 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Sex).HasColumnName("sex").HasMaxLength(20);
             entity.Property(e => e.Bio).HasColumnName("bio");
             entity.Property(e => e.ImageUrl).HasColumnName("image_url").HasMaxLength(500);
+            entity.Property(e => e.FosterId).HasColumnName("foster_id");
+            entity.Property(e => e.AssignedAt).HasColumnName("assigned_at");
+            entity.Property(e => e.AssignmentNotes).HasColumnName("assignment_notes");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
 
@@ -60,6 +66,65 @@ public class AppDbContext : DbContext
                 .WithMany(u => u.Pets)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Foster)
+                .WithMany()
+                .HasForeignKey(e => e.FosterId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // PetPhoto configuration
+        modelBuilder.Entity<PetPhoto>(entity =>
+        {
+            entity.ToTable("pet_photos");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PetId).HasColumnName("pet_id");
+            entity.Property(e => e.FileName).HasColumnName("file_name").HasMaxLength(255).IsRequired();
+            entity.Property(e => e.FilePath).HasColumnName("file_path").HasMaxLength(500).IsRequired();
+            entity.Property(e => e.IsPrimary).HasColumnName("is_primary").HasDefaultValue(false);
+            entity.Property(e => e.UploadedAt).HasColumnName("uploaded_at");
+            entity.Property(e => e.UploadedBy).HasColumnName("uploaded_by");
+
+            entity.HasOne(e => e.Pet)
+                .WithMany(p => p.Photos)
+                .HasForeignKey(e => e.PetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Uploader)
+                .WithMany()
+                .HasForeignKey(e => e.UploadedBy)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // MedicalRecord configuration
+        modelBuilder.Entity<MedicalRecord>(entity =>
+        {
+            entity.ToTable("medical_records");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PetId).HasColumnName("pet_id");
+            entity.Property(e => e.RecordType).HasColumnName("record_type").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.RecordDate).HasColumnName("record_date");
+            entity.Property(e => e.NextDueDate).HasColumnName("next_due_date");
+            entity.Property(e => e.Veterinarian).HasColumnName("veterinarian").HasMaxLength(100);
+            entity.Property(e => e.ClinicName).HasColumnName("clinic_name").HasMaxLength(100);
+            entity.Property(e => e.Cost).HasColumnName("cost").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Notes).HasColumnName("notes");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+
+            entity.HasOne(e => e.Pet)
+                .WithMany(p => p.MedicalRecords)
+                .HasForeignKey(e => e.PetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedBy)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Appointment configuration
@@ -171,6 +236,27 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.MessageId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // NotificationPreference configuration
+        modelBuilder.Entity<NotificationPreference>(entity =>
+        {
+            entity.ToTable("notification_preferences");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.EmailAppointments).HasColumnName("email_appointments").HasDefaultValue(true);
+            entity.Property(e => e.EmailReminders).HasColumnName("email_reminders").HasDefaultValue(true);
+            entity.Property(e => e.ReminderDaysBefore).HasColumnName("reminder_days_before").HasDefaultValue(1);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasIndex(e => e.UserId).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithOne()
+                .HasForeignKey<NotificationPreference>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

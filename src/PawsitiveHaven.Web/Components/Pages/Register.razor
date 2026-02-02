@@ -9,7 +9,8 @@
     {
         if (AuthState.IsAuthenticated)
         {
-            Navigation.NavigateTo("/dashboard");
+            // Redirect admins to admin dashboard, regular users to user dashboard
+            Navigation.NavigateTo(AuthState.IsAdmin ? "/admin" : "/dashboard");
         }
     }
 }

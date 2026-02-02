@@ -14,17 +14,67 @@ namespace PawsitiveHaven.Api.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IUserRepository _userRepo;
+    private readonly IPetRepository _petRepo;
+    private readonly IEscalationRepository _escalationRepo;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         IUserRepository userRepo,
+        IPetRepository petRepo,
+        IEscalationRepository escalationRepo,
         IPasswordHasher passwordHasher,
         ILogger<AdminController> logger)
     {
         _userRepo = userRepo;
+        _petRepo = petRepo;
+        _escalationRepo = escalationRepo;
         _passwordHasher = passwordHasher;
         _logger = logger;
+    }
+
+    // GET: api/admin/dashboard
+    [HttpGet("dashboard")]
+    public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats()
+    {
+        try
+        {
+            var users = await _userRepo.GetAllAsync();
+            var fosters = users.Where(u => u.UserLevel == "User" && u.IsActive).ToList();
+            var pets = await _petRepo.GetAllAsync();
+
+            // Get all escalations once and filter in memory
+            var allEscalations = await _escalationRepo.GetAllAsync();
+            var pendingCount = allEscalations.Count(e => e.Status == "Pending");
+            var recentEscalations = allEscalations
+                .OrderByDescending(e => e.CreatedAt)
+                .Take(5)
+                .ToList();
+
+            return new DashboardStatsDto(
+                TotalFosters: fosters.Count,
+                TotalPets: pets.Count(),
+                PendingEscalations: pendingCount,
+                ActiveUsers: users.Count(u => u.IsActive),
+                RecentEscalations: recentEscalations.Select(e => new EscalationSummaryDto(
+                    e.Id,
+                    e.UserName,
+                    e.UserQuestion.Length > 50 ? e.UserQuestion[..50] + "..." : e.UserQuestion,
+                    e.Status,
+                    e.CreatedAt
+                )).ToList(),
+                RecentUsers: users
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Take(5)
+                    .Select(u => new UserSummaryDto(u.Id, u.Username, u.UserLevel, u.CreatedAt))
+                    .ToList()
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching dashboard stats");
+            return StatusCode(500, "Failed to load dashboard statistics");
+        }
     }
 
     // GET: api/admin/users

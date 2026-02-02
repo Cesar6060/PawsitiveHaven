@@ -1,0 +1,339 @@
+@page "/admin/escalations"
+@inject AuthStateService AuthState
+@inject AdminService AdminSvc
+@inject NavigationManager Navigation
+
+<PageTitle>Escalation Management - Pawsitive Haven</PageTitle>
+
+@if (!AuthState.IsAuthenticated || !AuthState.IsAdmin)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-shield-lock fs-1 text-danger"></i>
+        <h4 class="mt-3">Access Denied</h4>
+        <p class="text-muted">You must be an administrator to access this page.</p>
+        <a href="/dashboard" class="btn btn-primary">Return to Dashboard</a>
+    </div>
+}
+else
+{
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Escalation Management</h1>
+            <div class="btn-group">
+                <button class="btn @(currentStatus == "Pending" ? "btn-warning" : "btn-outline-warning")"
+                    @onclick='() => FilterByStatus("Pending")'>
+                    Pending @if (pendingCount > 0) { <span class="badge bg-dark ms-1">@pendingCount</span> }
+                </button>
+                <button class="btn @(currentStatus == "InProgress" ? "btn-info" : "btn-outline-info")"
+                    @onclick='() => FilterByStatus("InProgress")'>
+                    In Progress
+                </button>
+                <button class="btn @(currentStatus == "Resolved" ? "btn-success" : "btn-outline-success")"
+                    @onclick='() => FilterByStatus("Resolved")'>
+                    Resolved
+                </button>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Loading escalations...</p>
+            </div>
+        }
+        else if (escalations.Count == 0)
+        {
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-check-circle fs-1 text-success"></i>
+                    <h4 class="mt-3">No @currentStatus Escalations</h4>
+                    <p class="text-muted">
+                        @if (currentStatus == "Pending")
+                        {
+                            <text>Great job! All escalations have been handled.</text>
+                        }
+                        else
+                        {
+                            <text>No escalations with this status.</text>
+                        }
+                    </p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var escalation in escalations)
+                {
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 @(escalation.Status == "Pending" ? "border-warning" : "")">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@escalation.UserName</strong>
+                                    <small class="text-muted ms-2">@escalation.UserEmail</small>
+                                </div>
+                                <span class="badge @GetStatusBadgeClass(escalation.Status)">@escalation.Status</span>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">Question:</h6>
+                                <p class="card-text">@escalation.UserQuestion</p>
+
+                                @if (!string.IsNullOrEmpty(escalation.AdditionalContext))
+                                {
+                                    <h6 class="card-title text-muted">Additional Context:</h6>
+                                    <p class="card-text text-muted small">@escalation.AdditionalContext</p>
+                                }
+
+                                @if (!string.IsNullOrEmpty(escalation.StaffNotes))
+                                {
+                                    <h6 class="card-title text-info">Staff Notes:</h6>
+                                    <p class="card-text text-info small">@escalation.StaffNotes</p>
+                                }
+
+                                <div class="mt-3 text-muted small">
+                                    <i class="bi bi-clock me-1"></i>Created: @escalation.CreatedAt.ToString("MMM dd, yyyy h:mm tt")
+                                    @if (escalation.EmailSentAt.HasValue)
+                                    {
+                                        <text><br /><i class="bi bi-envelope-check me-1"></i>Email sent: @escalation.EmailSentAt.Value.ToString("MMM dd, yyyy h:mm tt")</text>
+                                    }
+                                    @if (escalation.ResolvedAt.HasValue)
+                                    {
+                                        <text><br /><i class="bi bi-check-circle me-1"></i>Resolved: @escalation.ResolvedAt.Value.ToString("MMM dd, yyyy h:mm tt")</text>
+                                    }
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex gap-2">
+                                    @if (escalation.Status == "Pending")
+                                    {
+                                        <button class="btn btn-info btn-sm" @onclick='() => UpdateStatus(escalation.Id, "InProgress")'>
+                                            <i class="bi bi-play-fill me-1"></i>Start Working
+                                        </button>
+                                    }
+                                    @if (escalation.Status != "Resolved")
+                                    {
+                                        <button class="btn btn-success btn-sm" @onclick="() => ShowResolveModal(escalation)">
+                                            <i class="bi bi-check-lg me-1"></i>Resolve
+                                        </button>
+                                    }
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => ShowNotesModal(escalation)">
+                                        <i class="bi bi-pencil me-1"></i>Add Notes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (totalCount > pageSize)
+            {
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">Previous</button>
+                        </li>
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            var pageNum = i;
+                            <li class="page-item @(currentPage == pageNum ? "active" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                            </li>
+                        }
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+    </div>
+
+    <!-- Notes Modal -->
+    @if (showNotesModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(isResolving ? "Resolve Escalation" : "Add Staff Notes")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseNotesModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">@errorMessage</div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label">Staff Notes</label>
+                            <textarea class="form-control" rows="4" @bind="staffNotes"
+                                placeholder="Add notes about this escalation..."></textarea>
+                        </div>
+
+                        @if (isResolving)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                This will mark the escalation as resolved.
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseNotesModal">Cancel</button>
+                        <button type="button" class="btn @(isResolving ? "btn-success" : "btn-primary")"
+                            @onclick="SaveNotes" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            @(isResolving ? "Resolve" : "Save Notes")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<EscalationResponse> escalations = new();
+    private bool isLoading = true;
+    private string currentStatus = "Pending";
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalCount = 0;
+    private int pendingCount = 0;
+
+    private bool showNotesModal = false;
+    private bool isResolving = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private string? staffNotes;
+    private EscalationResponse? selectedEscalation;
+
+    private int totalPages => (int)Math.Ceiling((double)totalCount / pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated || !AuthState.IsAdmin)
+            return;
+
+        await LoadPendingCount();
+        await LoadEscalationsAsync();
+    }
+
+    private async Task LoadPendingCount()
+    {
+        var result = await AdminSvc.GetPendingEscalationsAsync(1, 1);
+        pendingCount = result?.TotalCount ?? 0;
+    }
+
+    private async Task LoadEscalationsAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await AdminSvc.GetEscalationsByStatusAsync(currentStatus, currentPage, pageSize);
+            if (result != null)
+            {
+                escalations = result.Escalations;
+                totalCount = result.TotalCount;
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task FilterByStatus(string status)
+    {
+        currentStatus = status;
+        currentPage = 1;
+        await LoadEscalationsAsync();
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        await LoadEscalationsAsync();
+    }
+
+    private async Task UpdateStatus(int id, string status)
+    {
+        var request = new UpdateEscalationRequest(status, null);
+        var result = await AdminSvc.UpdateEscalationAsync(id, request);
+        if (result != null)
+        {
+            await LoadPendingCount();
+            await LoadEscalationsAsync();
+        }
+    }
+
+    private void ShowResolveModal(EscalationResponse escalation)
+    {
+        selectedEscalation = escalation;
+        staffNotes = escalation.StaffNotes;
+        isResolving = true;
+        errorMessage = null;
+        showNotesModal = true;
+    }
+
+    private void ShowNotesModal(EscalationResponse escalation)
+    {
+        selectedEscalation = escalation;
+        staffNotes = escalation.StaffNotes;
+        isResolving = false;
+        errorMessage = null;
+        showNotesModal = true;
+    }
+
+    private void CloseNotesModal()
+    {
+        showNotesModal = false;
+        selectedEscalation = null;
+        staffNotes = null;
+        errorMessage = null;
+    }
+
+    private async Task SaveNotes()
+    {
+        if (selectedEscalation == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            var status = isResolving ? "Resolved" : null;
+            var request = new UpdateEscalationRequest(status, staffNotes);
+            var result = await AdminSvc.UpdateEscalationAsync(selectedEscalation.Id, request);
+
+            if (result != null)
+            {
+                CloseNotesModal();
+                await LoadPendingCount();
+                await LoadEscalationsAsync();
+            }
+            else
+            {
+                errorMessage = "Failed to update escalation. Please try again.";
+            }
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Pending" => "bg-warning text-dark",
+        "InProgress" => "bg-info",
+        "Resolved" => "bg-success",
+        _ => "bg-secondary"
+    };
+}

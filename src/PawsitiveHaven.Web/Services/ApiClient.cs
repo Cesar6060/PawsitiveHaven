@@ -126,6 +126,28 @@ public class ApiClient
         }
     }
 
+    public async Task<TResponse?> PatchAsync<TRequest, TResponse>(string endpoint, TRequest request)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _httpClient.PatchAsJsonAsync(endpoint, request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<TResponse>();
+            }
+
+            _logger.LogWarning("PATCH {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+            return default;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during PATCH {Endpoint}", endpoint);
+            return default;
+        }
+    }
+
     public async Task<bool> DeleteAsync(string endpoint)
     {
         try

@@ -1,5 +1,31 @@
 namespace PawsitiveHaven.Web.Models;
 
+// Dashboard
+public record DashboardStats(
+    int TotalFosters,
+    int TotalPets,
+    int PendingEscalations,
+    int ActiveUsers,
+    List<EscalationSummary> RecentEscalations,
+    List<UserSummary> RecentUsers
+);
+
+public record EscalationSummary(
+    int Id,
+    string UserName,
+    string QuestionPreview,
+    string Status,
+    DateTime CreatedAt
+);
+
+public record UserSummary(
+    int Id,
+    string Username,
+    string UserLevel,
+    DateTime CreatedAt
+);
+
+// Users
 public record UserDto(
     int Id,
     string Username,
@@ -36,4 +62,17 @@ public record UpdateFaqRequest(
     string? Answer,
     int? DisplayOrder,
     bool? IsActive
+);
+
+// Escalations
+public record UpdateEscalationRequest(
+    string? Status,
+    string? StaffNotes
+);
+
+public record EscalationListResponse(
+    List<EscalationResponse> Escalations,
+    int TotalCount,
+    int Page,
+    int PageSize
 );

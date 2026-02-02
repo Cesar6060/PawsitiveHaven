@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using OpenAI;
 using OpenAI.Assistants;
 using OpenAI.Chat;
@@ -445,6 +446,10 @@ Use the following FAQ information to help answer questions. Reference this infor
         if (string.IsNullOrEmpty(response))
             return response;
 
+        // Strip OpenAI Assistants API citation markers (e.g., 【4:0†source】)
+        // These are confusing for end users who don't understand the notation
+        response = StripCitationMarkers(response);
+
         // Check if response contains system prompt fragments
         var sensitivePatterns = new[]
         {
@@ -468,5 +473,12 @@ Use the following FAQ information to help answer questions. Reference this infor
         }
 
         return response;
+    }
+
+    private static string StripCitationMarkers(string text)
+    {
+        // Pattern matches OpenAI file_search citation format: 【digit:digit†text】
+        // Examples: 【4:0†source】, 【1:2†first-time-foster-guide.md】
+        return Regex.Replace(text, @"【\d+:\d+†[^】]*】", string.Empty);
     }
 }

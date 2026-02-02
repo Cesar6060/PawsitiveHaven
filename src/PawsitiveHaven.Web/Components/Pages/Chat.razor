@@ -16,44 +16,51 @@
 }
 else
 {
-    <div class="chat-container">
+    <div class="chat-page-wrapper">
         <!-- Sidebar with conversations -->
         <div class="chat-sidebar d-none d-md-flex">
             <div class="sidebar-header">
-                <h5 class="mb-0">Conversations</h5>
-                <button class="btn btn-sm btn-outline-primary" @onclick="StartNewChat">
-                    <i class="bi bi-plus-lg"></i>
+                <button class="new-chat-btn" @onclick="StartNewChat">
+                    <i class="bi bi-plus-lg me-2"></i>New chat
                 </button>
             </div>
             <div class="conversation-list">
                 @if (isLoadingConversations)
                 {
                     <div class="text-center py-3">
-                        <div class="spinner-border spinner-border-sm"></div>
+                        <div class="spinner-border spinner-border-sm text-light"></div>
                     </div>
                 }
                 else if (conversations.Count == 0)
                 {
-                    <div class="text-center py-3 text-muted small">
-                        No conversations yet
+                    <div class="empty-conversations">
+                        <i class="fa-regular fa-comments"></i>
+                        <span>No conversations yet</span>
                     </div>
                 }
                 else
                 {
+                    <div class="conversation-section-label">Recent</div>
                     @foreach (var conv in conversations)
                     {
                         <div class="conversation-item @(currentConversationId == conv.Id ? "active" : "")"
                             @onclick="async () => await LoadConversation(conv.Id)">
-                            <div class="conversation-title">@(conv.Title ?? "New Chat")</div>
-                            <div class="conversation-date">@conv.UpdatedAt.ToString("MMM dd")</div>
+                            <i class="bi bi-chat-left-text me-2"></i>
+                            <span class="conversation-title">@(conv.Title ?? "New Chat")</span>
                         </div>
                     }
                 }
             </div>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fa-solid fa-paw me-2"></i>
+                    <span>Pawsitive Haven AI</span>
+                </div>
+            </div>
         </div>
 
         <!-- Main chat area -->
-        <div class="chat-main">
+        <div class="chat-main-wrapper">
             <div class="chat-header d-md-none">
                 <button class="btn btn-sm btn-outline-secondary me-2" @onclick="ToggleMobileSidebar">
                     <i class="bi bi-list"></i>
@@ -69,19 +76,22 @@ else
                 {
                     <div class="welcome-message">
                         <div class="welcome-icon">
-                            <i class="bi bi-chat-heart fs-1"></i>
+                            <i class="fa-solid fa-paw"></i>
                         </div>
-                        <h4>Welcome to Pawsitive Haven AI</h4>
-                        <p class="text-muted">Ask me anything about pet care, adoption, or our services!</p>
+                        <h4>Hi! I'm your Pawsitive Haven Assistant</h4>
+                        <p class="text-muted">I can help with pet care tips, fostering questions, or creating bios for your foster pets!</p>
                         <div class="suggestion-chips">
-                            <button class="chip" @onclick="@(() => SendSuggestion("What are your adoption hours?"))">
-                                Adoption hours
+                            <button class="chip" @onclick="@(() => SendSuggestion("How do I introduce a foster pet to my home?"))">
+                                <i class="fa-solid fa-house me-1"></i> Foster tips
                             </button>
-                            <button class="chip" @onclick="@(() => SendSuggestion("How do I adopt a pet?"))">
-                                How to adopt
+                            <button class="chip" @onclick="@(() => SendSuggestion("Help me write a bio for my foster pet"))">
+                                <i class="fa-solid fa-pen me-1"></i> Write a pet bio
                             </button>
-                            <button class="chip" @onclick="@(() => SendSuggestion("What vaccinations does my pet need?"))">
-                                Pet vaccinations
+                            <button class="chip" @onclick="@(() => SendSuggestion("What should I feed my foster dog?"))">
+                                <i class="fa-solid fa-bowl-food me-1"></i> Feeding guide
+                            </button>
+                            <button class="chip" @onclick="@(() => SendSuggestion("Emergency vet contacts"))">
+                                <i class="fa-solid fa-phone me-1"></i> Emergency help
                             </button>
                         </div>
                     </div>
@@ -94,11 +104,11 @@ else
                             <div class="message-avatar">
                                 @if (msg.Role == "user")
                                 {
-                                    <i class="bi bi-person-circle"></i>
+                                    <i class="fa-solid fa-user"></i>
                                 }
                                 else
                                 {
-                                    <i class="bi bi-robot"></i>
+                                    <i class="fa-solid fa-paw"></i>
                                 }
                             </div>
                             <div class="message-content">
@@ -119,7 +129,7 @@ else
                     {
                         <div class="message assistant-message">
                             <div class="message-avatar">
-                                <i class="bi bi-robot"></i>
+                                <i class="fa-solid fa-paw"></i>
                             </div>
                             <div class="message-content">
                                 <div class="typing-indicator">
@@ -134,8 +144,9 @@ else
             <div class="chat-input-area">
                 <form @onsubmit="SendMessage" @onsubmit:preventDefault>
                     <div class="input-container">
-                        <textarea class="form-control" rows="1" placeholder="Type your message..."
+                        <textarea id="chat-input" class="form-control" rows="1" placeholder="Type your message..."
                             @bind="inputMessage" @bind:event="oninput"
+                            @oninput="OnTextareaInput"
                             @onkeydown="HandleKeyDown" @onkeydown:preventDefault="shouldPreventDefault"
                             disabled="@isLoading"></textarea>
                         <button type="submit" class="btn btn-primary send-btn"
@@ -157,18 +168,24 @@ else
         <div class="mobile-sidebar-overlay" @onclick="ToggleMobileSidebar">
             <div class="mobile-sidebar" @onclick:stopPropagation="true">
                 <div class="sidebar-header">
-                    <h5 class="mb-0">Conversations</h5>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleMobileSidebar">
+                    <button class="new-chat-btn" @onclick="() => { StartNewChat(); ToggleMobileSidebar(); }">
+                        <i class="bi bi-plus-lg me-2"></i>New chat
+                    </button>
+                    <button class="btn btn-sm text-white ms-2" @onclick="ToggleMobileSidebar">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
                 <div class="conversation-list">
+                    @if (conversations.Count > 0)
+                    {
+                        <div class="conversation-section-label">Recent</div>
+                    }
                     @foreach (var conv in conversations)
                     {
                         <div class="conversation-item @(currentConversationId == conv.Id ? "active" : "")"
                             @onclick="async () => { try { await LoadConversation(conv.Id); } finally { ToggleMobileSidebar(); } }">
-                            <div class="conversation-title">@(conv.Title ?? "New Chat")</div>
-                            <div class="conversation-date">@conv.UpdatedAt.ToString("MMM dd")</div>
+                            <i class="bi bi-chat-left-text me-2"></i>
+                            <span class="conversation-title">@(conv.Title ?? "New Chat")</span>
                         </div>
                     }
                 </div>
@@ -264,81 +281,129 @@ else
 }
 
 <style>
-    .chat-container {
+    .chat-page-wrapper {
         display: flex;
         height: calc(100vh - 120px);
-        background: #ffffff;
-        border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e5e5e5;
+        background: #fff;
     }
 
     .chat-sidebar {
-        width: 260px;
-        background: #fafafa;
-        border-right: 1px solid #e5e5e5;
+        width: 300px;
+        background: #FAFAF9;
+        border-right: 1px solid #E7E5E4;
         display: flex;
         flex-direction: column;
+        flex-shrink: 0;
     }
 
     .sidebar-header {
-        padding: 1rem;
-        border-bottom: 1px solid #e5e5e5;
+        padding: 0.875rem;
+    }
+
+    .new-chat-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: #D97706;
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        background: #fff;
+    }
+
+    .new-chat-btn:hover {
+        background: #B45309;
     }
 
     .conversation-list {
         flex: 1;
         overflow-y: auto;
-        padding: 0.5rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .conversation-section-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #A8A29E;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.75rem 0.75rem 0.5rem;
     }
 
     .conversation-item {
-        padding: 0.75rem 1rem;
+        padding: 0.625rem 0.75rem;
         border-radius: 8px;
         cursor: pointer;
-        transition: background 0.2s;
-        margin-bottom: 0.25rem;
+        transition: all 0.15s ease;
+        color: #57534E;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        margin-bottom: 1px;
     }
 
     .conversation-item:hover {
-        background: #f0f0f0;
+        background: #F5F5F4;
+        color: #292524;
     }
 
     .conversation-item.active {
-        background: #D97706;
-        color: white;
+        background: #FEF3C7;
+        color: #92400E;
     }
 
     .conversation-title {
-        font-size: 0.875rem;
-        font-weight: 500;
+        flex: 1;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    .conversation-date {
-        font-size: 0.75rem;
-        opacity: 0.7;
-        margin-top: 0.125rem;
+    .empty-conversations {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        color: #A8A29E;
+        font-size: 0.8rem;
+        gap: 0.5rem;
     }
 
-    .chat-main {
+    .empty-conversations i {
+        font-size: 1.5rem;
+    }
+
+    .sidebar-footer {
+        padding: 0.75rem;
+        border-top: 1px solid #E7E5E4;
+    }
+
+    .user-info {
+        padding: 0.625rem 0.75rem;
+        border-radius: 8px;
+        color: #78716C;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .chat-main-wrapper {
         flex: 1;
         display: flex;
         flex-direction: column;
-        background: #ffffff;
+        background: #fff;
         min-width: 0;
     }
 
     .chat-header {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #e5e5e5;
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid #f0f0f0;
         display: flex;
         align-items: center;
         background: #fff;
@@ -347,8 +412,9 @@ else
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding: 1.5rem;
-        background: #ffffff;
+        padding: 1.5rem 2rem;
+        background: #fff;
+        width: 100%;
     }
 
     .welcome-message {
@@ -359,70 +425,83 @@ else
         text-align: center;
         padding: 3rem 1rem;
         height: 100%;
+        max-width: 700px;
+        margin: 0 auto;
     }
 
     .welcome-icon {
         width: 72px;
         height: 72px;
-        background: linear-gradient(135deg, #FFF7ED, #FDBA74);
-        border-radius: 50%;
+        background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+        border-radius: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1.25rem;
-        color: #D97706;
+        margin-bottom: 1.5rem;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 8px 32px rgba(217, 119, 6, 0.25);
     }
 
     .welcome-message h4 {
-        color: #333;
+        color: #292524;
         margin-bottom: 0.5rem;
+        font-size: 1.75rem;
+        font-weight: 600;
     }
 
     .welcome-message p {
-        color: #666;
-        max-width: 400px;
+        color: #6B7280;
+        max-width: 450px;
+        line-height: 1.6;
+        margin-bottom: 0;
+        font-size: 1rem;
     }
 
     .suggestion-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        justify-content: center;
-        margin-top: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-top: 2.5rem;
+        width: 100%;
+        max-width: 480px;
     }
 
     .chip {
-        background: #fff;
-        border: 1px solid #e5e5e5;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        background: #ffffff;
+        border: 1px solid #E5E7EB;
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
         cursor: pointer;
-        transition: all 0.2s;
-        color: #555;
+        transition: all 0.2s ease;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        text-align: left;
     }
 
     .chip:hover {
-        background: #D97706;
-        color: white;
+        background: #F9FAFB;
         border-color: #D97706;
+        color: #D97706;
     }
 
     .message {
         display: flex;
-        gap: 0.75rem;
-        margin-bottom: 1.25rem;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
         max-width: 100%;
     }
 
     .message-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.1rem;
+        font-size: 0.875rem;
         flex-shrink: 0;
     }
 
@@ -432,14 +511,13 @@ else
     }
 
     .assistant-message .message-avatar {
-        background: #f5f5f5;
+        background: #FEF3C7;
         color: #D97706;
     }
 
     .message-content {
         flex: 1;
         min-width: 0;
-        max-width: 75%;
     }
 
     .user-message {
@@ -453,46 +531,45 @@ else
     }
 
     .message-text {
-        background: #f5f5f5;
-        padding: 0.75rem 1rem;
-        border-radius: 16px;
+        padding: 0;
         display: inline-block;
         text-align: left;
         white-space: pre-wrap;
         word-wrap: break-word;
-        line-height: 1.5;
+        line-height: 1.6;
         max-width: 100%;
+        color: #1F2937;
+        font-size: 0.9375rem;
     }
 
     .user-message .message-text {
         background: #D97706;
         color: white;
+        padding: 0.75rem 1rem;
         border-radius: 16px 16px 4px 16px;
     }
 
     .assistant-message .message-text {
-        border-radius: 16px 16px 16px 4px;
+        background: transparent;
     }
 
     .message-time {
         font-size: 0.7rem;
-        color: #999;
+        color: #9CA3AF;
         margin-top: 0.375rem;
     }
 
     .typing-indicator {
         display: flex;
         gap: 4px;
-        padding: 0.875rem 1rem;
-        background: #f5f5f5;
-        border-radius: 16px;
+        padding: 0.5rem 0;
         width: fit-content;
     }
 
     .typing-indicator span {
         width: 8px;
         height: 8px;
-        background: #bbb;
+        background: #D97706;
         border-radius: 50%;
         animation: bounce 1.4s infinite ease-in-out both;
     }
@@ -501,43 +578,51 @@ else
     .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 
     @@keyframes bounce {
-        0%, 80%, 100% { transform: scale(0); }
-        40% { transform: scale(1); }
+        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 1; }
     }
 
     .chat-input-area {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid #e5e5e5;
+        padding: 1rem 2rem 1.5rem;
         background: #fff;
+        width: 100%;
     }
 
     .input-container {
         display: flex;
         gap: 0.75rem;
         align-items: flex-end;
+        background: #F4F4F5;
+        border-radius: 24px;
+        padding: 0.5rem 0.5rem 0.5rem 1rem;
     }
 
     .input-container textarea {
         flex: 1;
         resize: none;
-        border-radius: 24px;
-        padding: 0.75rem 1.25rem;
-        border: 1px solid #e5e5e5;
+        border: none;
+        padding: 0.625rem 0;
         font-size: 0.95rem;
-        line-height: 1.4;
-        max-height: 120px;
+        line-height: 1.5;
+        min-height: 24px;
+        max-height: 96px;
+        background: transparent;
+        color: #1F2937;
+        overflow-y: auto;
     }
 
     .input-container textarea:focus {
         outline: none;
-        border-color: #D97706;
-        box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1);
+    }
+
+    .input-container textarea::placeholder {
+        color: #9CA3AF;
     }
 
     .send-btn {
         border-radius: 50%;
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         padding: 0;
         display: flex;
         align-items: center;
@@ -546,20 +631,21 @@ else
         border: none;
         color: white;
         flex-shrink: 0;
+        transition: all 0.15s ease;
     }
 
     .send-btn:hover:not(:disabled) {
-        background: #b45309;
+        background: #B45309;
     }
 
     .send-btn:disabled {
-        background: #ccc;
+        background: #D1D5DB;
     }
 
     .mobile-sidebar-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
         z-index: 1000;
     }
 
@@ -569,16 +655,66 @@ else
         top: 0;
         bottom: 0;
         width: 280px;
-        background: white;
+        background: #FAFAF9;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mobile-sidebar .sidebar-header {
+        padding: 0.75rem;
+        border-bottom: 1px solid #E7E5E4;
+        display: flex;
+        align-items: center;
+    }
+
+    .mobile-sidebar .sidebar-header .new-chat-btn {
+        flex: 1;
+    }
+
+    .mobile-sidebar .sidebar-header .btn {
+        color: #57534E;
+    }
+
+    .mobile-sidebar .conversation-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.5rem;
+    }
+
+    .mobile-sidebar .conversation-section-label {
+        color: #A8A29E;
+    }
+
+    .mobile-sidebar .conversation-item {
+        padding: 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #57534E;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+
+    .mobile-sidebar .conversation-item:hover {
+        background: #F5F5F4;
+        color: #292524;
+    }
+
+    .mobile-sidebar .conversation-item.active {
+        background: #FEF3C7;
+        color: #92400E;
     }
 
     .contact-us-btn {
         font-size: 0.75rem;
-        color: #999;
+        color: #A8A29E;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 0.25rem;
+        gap: 0.375rem;
+        transition: color 0.2s;
     }
 
     .contact-us-btn:hover {
@@ -594,25 +730,27 @@ else
         align-items: center;
         justify-content: center;
         padding: 1rem;
+        backdrop-filter: blur(4px);
     }
 
     .escalation-modal {
         background: white;
-        border-radius: 12px;
+        border-radius: 16px;
         width: 100%;
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     }
 
     .modal-header-custom {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #e5e5e5;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #fafafa;
+        background: linear-gradient(180deg, #FFF7ED 0%, #ffffff 100%);
+        border-radius: 16px 16px 0 0;
     }
 
     .modal-body {
@@ -621,32 +759,50 @@ else
 
     .modal-footer-custom {
         padding: 1rem 1.5rem;
-        border-top: 1px solid #e5e5e5;
+        border-top: 1px solid #f0f0f0;
         display: flex;
         justify-content: flex-end;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        background: #FAFAFA;
+        border-radius: 0 0 16px 16px;
     }
 
     .success-icon {
-        width: 80px;
-        height: 80px;
-        background: #d4edda;
+        width: 88px;
+        height: 88px;
+        background: linear-gradient(135deg, #d4edda 0%, #a8e6cf 100%);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto;
+        box-shadow: 0 8px 24px rgba(22, 163, 74, 0.2);
     }
 
     /* Responsive adjustments */
     @@media (max-width: 768px) {
-        .chat-container {
-            height: calc(100vh - 80px);
+        .chat-page-wrapper {
+            height: calc(100vh - 140px);
             border-radius: 0;
+            border: none;
         }
 
-        .message-content {
-            max-width: 85%;
+        .chat-messages {
+            padding: 1rem;
+        }
+
+        .chat-input-area {
+            padding: 0.75rem 1rem 1rem;
+        }
+
+        .suggestion-chips {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .chip {
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
         }
     }
 </style>
@@ -738,6 +894,24 @@ else
         shouldPreventDefault = e.Key == "Enter" && !e.ShiftKey;
     }
 
+    private async Task OnTextareaInput()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("chatHelpers.autoResizeTextarea", "#chat-input");
+        }
+        catch { }
+    }
+
+    private async Task ResetTextareaHeight()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("chatHelpers.resetTextareaHeight", "#chat-input");
+        }
+        catch { }
+    }
+
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(inputMessage) || isLoading)
@@ -746,6 +920,7 @@ else
         var userMessage = inputMessage.Trim();
         inputMessage = "";
         isLoading = true;
+        await ResetTextareaHeight();
 
         // Add user message to UI immediately
         messages.Add(new MessageDto("user", userMessage, DateTime.Now));

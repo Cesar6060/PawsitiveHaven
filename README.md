@@ -185,15 +185,6 @@ docker-compose -f docker-compose.prod.yml up --build -d
 
 ---
 
-## Documentation
-
-- [Technical Documentation](DOCUMENTATION.md) - Detailed architecture and API reference
-- [Chatbot Security](docs/CHATBOT_SECURITY.md) - Threat model and security controls
-- [Implementation Plan](docs/CHATBOT_IMPLEMENTATION_PLAN.md) - Development roadmap
-- [Knowledge Base](docs/KNOWLEDGE_BASE.md) - AI content catalog
-
----
-
 ## License
 
 This project is part of a portfolio demonstration.

@@ -187,7 +187,7 @@ docker-compose -f docker-compose.prod.yml up --build -d
 
 ## License
 
-This project is part of a portfolio demonstration.
+This project was developed as a graduate school capstone project.
 
 ---
 
